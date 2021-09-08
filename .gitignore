@@ -154,3 +154,6 @@ gradle-app.setting
 .settings/
 bin/
 imgui.ini
+
+# Ignore the build directory in TeamCode
+TeamCode/build/
