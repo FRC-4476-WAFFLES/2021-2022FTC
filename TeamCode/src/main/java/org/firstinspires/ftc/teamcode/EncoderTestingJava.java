@@ -59,7 +59,7 @@ public class EncoderTestingJava extends LinearOpMode {
         waitForStart();
         runtime.reset();
 
-        // Drive 3 inches at 1 inch per second with a timeout of 5 seconds
+        // Drive 25 inches at 1 inch per second with a timeout of 5 seconds
         encoderDrive(1, 25, 5.0);
 
         while (opModeIsActive()) {
