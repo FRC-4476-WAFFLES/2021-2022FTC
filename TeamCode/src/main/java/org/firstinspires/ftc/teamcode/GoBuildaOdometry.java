@@ -1,9 +1,16 @@
+/*
+Op mode to use kinematics and odometry to drive the robot to a target location.
+More information about FTCLib can be found at https://docs.ftclib.org/ftclib/
+ */
+
 package org.firstinspires.ftc.teamcode;
 
 import com.arcrobotics.ftclib.drivebase.MecanumDrive;
 import com.arcrobotics.ftclib.geometry.Pose2d;
 import com.arcrobotics.ftclib.geometry.Rotation2d;
 import com.arcrobotics.ftclib.geometry.Translation2d;
+import com.arcrobotics.ftclib.hardware.motors.Motor;
+import com.arcrobotics.ftclib.hardware.motors.MotorEx;
 import com.arcrobotics.ftclib.kinematics.wpilibkinematics.ChassisSpeeds;
 import com.arcrobotics.ftclib.kinematics.wpilibkinematics.MecanumDriveKinematics;
 import com.arcrobotics.ftclib.kinematics.wpilibkinematics.MecanumDriveOdometry;
@@ -11,8 +18,6 @@ import com.arcrobotics.ftclib.kinematics.wpilibkinematics.MecanumDriveWheelSpeed
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -23,21 +28,16 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 public class GoBuildaOdometry extends LinearOpMode {
     private ElapsedTime runtime = new ElapsedTime();
 
-    private DcMotor frontLeftMotor;
-    private DcMotor frontRightMotor;
-    private DcMotor backLeftMotor;
-    private DcMotor backRightMotor;
+    private MotorEx frontLeftMotor;
+    private MotorEx frontRightMotor;
+    private MotorEx backLeftMotor;
+    private MotorEx backRightMotor;
 
     private BNO055IMU imu;
 
     @Override
     public void runOpMode() {
-        float LeftStickY;
-        float LeftStickX;
-        float RightStickX;
-        double LeftStickYProcessed;
-        double LeftStickXProcessed;
-        double RightStickXProcessed;
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
 
         BNO055IMU.Parameters imuParameters;
 
@@ -52,26 +52,40 @@ public class GoBuildaOdometry extends LinearOpMode {
         // Initialize IMU.
         imu.initialize(imuParameters);
 
-        float x = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
 
-        // Assign variables to corresponding hardware
-        frontLeftMotor = hardwareMap.get(DcMotor.class, "FL");
-        frontRightMotor = hardwareMap.get(DcMotor.class, "FR");
-        backLeftMotor = hardwareMap.get(DcMotor.class, "BL");
-        backRightMotor = hardwareMap.get(DcMotor.class, "BR");
+        // Assign motor variables to corresponding hardware
+        frontLeftMotor = new MotorEx(hardwareMap, "FL", Motor.GoBILDA.RPM_312);
+        frontRightMotor = new MotorEx(hardwareMap, "FR", Motor.GoBILDA.RPM_312);
+        backLeftMotor = new MotorEx(hardwareMap, "BL", Motor.GoBILDA.RPM_312);
+        backRightMotor = new MotorEx(hardwareMap, "BR", Motor.GoBILDA.RPM_312);
 
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        // Set motors to run at a specified velocity
+        frontLeftMotor.setRunMode(Motor.RunMode.VelocityControl);
+        frontRightMotor.setRunMode(Motor.RunMode.VelocityControl);
+        backLeftMotor.setRunMode(Motor.RunMode.VelocityControl);
+        backRightMotor.setRunMode(Motor.RunMode.VelocityControl);
 
-        // Initialization Code
-        double powerMultiplier = 1;
+        // Invert the direction of the left motors
+        frontLeftMotor.setInverted(true);
+        backLeftMotor.setInverted(true);
 
-        frontLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        backLeftMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        // Set the motors to brake on stop
+        frontLeftMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
+        frontRightMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
+        backLeftMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
+        backRightMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
 
-        frontLeftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        frontRightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        backLeftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        backRightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        // Reset the motor encoders
+        frontLeftMotor.resetEncoder();
+        frontRightMotor.resetEncoder();
+        backLeftMotor.resetEncoder();
+        backRightMotor.resetEncoder();
+
+        // Set how far the wheels move in millimeters per encoder pulse
+        frontLeftMotor.setDistancePerPulse(0.59);
+        frontRightMotor.setDistancePerPulse(0.59);
+        backLeftMotor.setDistancePerPulse(0.59);
+        backRightMotor.setDistancePerPulse(0.59);
 
         // Setup the odometry system
         // TODO: change all numbers from placeholder values to the values on the robot
@@ -88,6 +102,12 @@ public class GoBuildaOdometry extends LinearOpMode {
         Rotation2d gyroAngle = Rotation2d.fromDegrees(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
 
         MecanumDriveWheelSpeeds wheelSpeeds = kinematics.toWheelSpeeds(speeds);
+
+        double frontLeftSpeed = wheelSpeeds.frontLeftMetersPerSecond;
+        double frontRightSpeed = wheelSpeeds.frontRightMetersPerSecond;
+        double backLeftSpeed = wheelSpeeds.rearLeftMetersPerSecond;
+        double backRightSpeed = wheelSpeeds.rearRightMetersPerSecond;
+
         // Create an odometry object - format is (kinematics object, gyro heading, start position on field)
         MecanumDriveOdometry odometry = new MecanumDriveOdometry(kinematics, gyroAngle, new Pose2d(5, 5, new Rotation2d()));
 
@@ -100,27 +120,6 @@ public class GoBuildaOdometry extends LinearOpMode {
         runtime.reset();
 
         while (opModeIsActive()) {
-            LeftStickY = gamepad1.left_stick_y;
-            LeftStickX = gamepad1.left_stick_x;
-            RightStickX = gamepad1.right_stick_x;
-
-            if (gamepad1.x) {
-                powerMultiplier = 0.33;
-            } else if (gamepad1.y) {
-                powerMultiplier = 0.66;
-            } else if (gamepad1.b) {
-                powerMultiplier = 1;
-            }
-
-            LeftStickYProcessed = Math.signum(LeftStickY) * Math.pow(LeftStickY, 2);
-            LeftStickXProcessed = Math.signum(LeftStickX) * Math.pow(LeftStickX, 2);
-            RightStickXProcessed = Math.signum(RightStickX) * Math.pow(RightStickX, 2);
-
-            frontLeftMotor.setPower(powerMultiplier * (-LeftStickYProcessed + LeftStickXProcessed + RightStickXProcessed));
-            frontRightMotor.setPower(powerMultiplier * (-LeftStickYProcessed - LeftStickXProcessed - RightStickXProcessed));
-            backLeftMotor.setPower(powerMultiplier * (-LeftStickYProcessed - LeftStickXProcessed + RightStickXProcessed));
-            backRightMotor.setPower(powerMultiplier * (-LeftStickYProcessed + LeftStickXProcessed - RightStickXProcessed));
-
             telemetry.update();
         }
     }
