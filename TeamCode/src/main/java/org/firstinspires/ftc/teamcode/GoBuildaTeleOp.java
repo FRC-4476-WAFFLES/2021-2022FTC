@@ -53,6 +53,7 @@ public class GoBuildaTeleOp extends LinearOpMode {
 
         while (opModeIsActive()){
             drive.driveFieldCentric(driverOp.getLeftX(), driverOp.getLeftY(), driverOp.getRightX(), imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
+            telemetry.update();
         }
     }
 }
