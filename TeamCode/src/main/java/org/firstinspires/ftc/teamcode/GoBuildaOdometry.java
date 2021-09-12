@@ -82,10 +82,10 @@ public class GoBuildaOdometry extends LinearOpMode {
         backRightMotor.resetEncoder();
 
         // Set how far the wheels move in millimeters per encoder pulse
-        frontLeftMotor.setDistancePerPulse(0.59);
-        frontRightMotor.setDistancePerPulse(0.59);
-        backLeftMotor.setDistancePerPulse(0.59);
-        backRightMotor.setDistancePerPulse(0.59);
+        frontLeftMotor.setDistancePerPulse(0.557);
+        frontRightMotor.setDistancePerPulse(0.557);
+        backLeftMotor.setDistancePerPulse(0.557);
+        backRightMotor.setDistancePerPulse(0.557);
 
         // Setup the odometry system
         // TODO: change all numbers from placeholder values to the values on the robot
