@@ -2,13 +2,15 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+@TeleOp(name = "Encoder Testing")
 public class EncoderTestingJava extends LinearOpMode {
     private ElapsedTime runtime = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
-    static final double     COUNTS_PER_MOTOR_REV    = 1440 ;    // eg: TETRIX Motor Encoder
+    static final double     COUNTS_PER_MOTOR_REV    = 550 ;    // eg: TETRIX Motor Encoder
     static final double     WHEEL_DIAMETER_INCHES   = 3.75 ;     // For figuring circumference
     static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV) / (WHEEL_DIAMETER_INCHES * 3.1415);
     private DcMotor frontLeftMotor;
@@ -47,7 +49,7 @@ public class EncoderTestingJava extends LinearOpMode {
         runtime.reset();
 
         // Drive 3 inches at 1 inch per second with a timeout of 5 seconds
-        encoderDrive(1, 3, 5.0);
+        encoderDrive(1, 7, 5.0);
 
         while (opModeIsActive()) {
             telemetry.update();
