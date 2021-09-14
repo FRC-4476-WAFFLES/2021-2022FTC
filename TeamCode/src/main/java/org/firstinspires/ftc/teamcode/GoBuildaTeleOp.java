@@ -31,6 +31,17 @@ public class GoBuildaTeleOp extends LinearOpMode {
         frontRightMotor = new MotorEx(hardwareMap, "FR", Motor.GoBILDA.RPM_312);
         backLeftMotor = new MotorEx(hardwareMap, "BL", Motor.GoBILDA.RPM_312);
         backRightMotor = new MotorEx(hardwareMap, "BR", Motor.GoBILDA.RPM_312);
+
+        frontLeftMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
+        frontRightMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
+        backLeftMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
+        backRightMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
+
+        frontLeftMotor.setInverted(true);
+        frontRightMotor.setInverted(true);
+        backLeftMotor.setInverted(true);
+        backRightMotor.setInverted(true);
+
         drive = new MecanumDrive(frontLeftMotor,frontRightMotor,backLeftMotor,backRightMotor);
         driverOp = new GamepadEx(gamepad1);
 
@@ -52,7 +63,11 @@ public class GoBuildaTeleOp extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()){
-            drive.driveFieldCentric(driverOp.getLeftX(), driverOp.getLeftY(), driverOp.getRightX(), imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle +  15);
+            drive.driveFieldCentric(driverOp.getLeftX(), driverOp.getLeftY(), driverOp.getRightX(), imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
+            telemetry.addData("LeftJoyX", driverOp.getLeftX());
+            telemetry.addData("LeftJoyY", driverOp.getLeftY());
+            telemetry.addData("RightJoyX", driverOp.getRightX());
+            telemetry.addData("Yaw", imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
             telemetry.update();
         }
     }
