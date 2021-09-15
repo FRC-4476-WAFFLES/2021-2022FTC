@@ -35,6 +35,12 @@ public class GoBuildaOdometry extends LinearOpMode {
 
     private BNO055IMU imu;
 
+    double locationX = 0;
+    double locationY = 0;
+
+    final double locationXStart = 1;
+    final double locationYStart = 0;
+
     @Override
     public void runOpMode() {
         imu = hardwareMap.get(BNO055IMU.class, "imu");
@@ -67,7 +73,9 @@ public class GoBuildaOdometry extends LinearOpMode {
 
         // Invert the direction of the left motors
         frontLeftMotor.setInverted(true);
+        frontRightMotor.setInverted(true);
         backLeftMotor.setInverted(true);
+        backRightMotor.setInverted(true);
 
         // Set the motors to brake on stop
         frontLeftMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
@@ -109,7 +117,7 @@ public class GoBuildaOdometry extends LinearOpMode {
         double backRightSpeed = wheelSpeeds.rearRightMetersPerSecond;
 
         // Create an odometry object - format is (kinematics object, gyro heading, start position on field)
-        MecanumDriveOdometry odometry = new MecanumDriveOdometry(kinematics, gyroAngle, new Pose2d(5, 5, new Rotation2d()));
+        MecanumDriveOdometry odometry = new MecanumDriveOdometry(kinematics, gyroAngle, new Pose2d(locationXStart, locationYStart, new Rotation2d()));
 
         // Update telemetry
         telemetry.addData("Status", "Initialized");
@@ -119,7 +127,9 @@ public class GoBuildaOdometry extends LinearOpMode {
         waitForStart();
         runtime.reset();
 
-        while (opModeIsActive()) {
+        while (opModeIsActive()){
+            locationX = odometry.getPoseMeters().getX();
+            locationY = odometry.getPoseMeters().getY();
 
             telemetry.update();
         }
