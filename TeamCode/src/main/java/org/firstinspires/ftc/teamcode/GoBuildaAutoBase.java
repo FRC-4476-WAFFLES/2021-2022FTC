@@ -6,6 +6,8 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
+import java.util.ArrayList;
+
 @Autonomous(name = "Gobuilda Auto Base")
 public class GoBuildaAutoBase extends LinearOpMode {
     private MotorEx frontLeftMotor;
@@ -39,9 +41,19 @@ public class GoBuildaAutoBase extends LinearOpMode {
 
         GoBuildaChassisSubsystem mecanumNavigation = new GoBuildaChassisSubsystem(frontLeftMotor,frontRightMotor,backLeftMotor,backRightMotor,imu);
         mecanumNavigation.initialize(0,0,0);
+        mecanumNavigation.setMaxVelocity(1,1,1);
+        mecanumNavigation.setMaxAcceleration(1,1,.5);
+        mecanumNavigation.setTolerance(0.05,0.05,0.5);
 
         waitForStart();
 
         mecanumNavigation.goTo(0,0,0);
+        NavigationWaypoint p1 = new NavigationWaypoint(1,2);
+        NavigationWaypoint p2 = new NavigationWaypoint(2,1,45);
+        ArrayList<NavigationWaypoint> route1 = new ArrayList<NavigationWaypoint>();
+        route1.add(p1);
+        route1.add(p2);
+        route1.add(new NavigationWaypoint(1,2));
+        mecanumNavigation.goTo(route1);
     }
 }

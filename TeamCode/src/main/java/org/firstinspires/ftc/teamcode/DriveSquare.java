@@ -39,7 +39,9 @@ public class DriveSquare extends LinearOpMode {
 
         GoBuildaChassisSubsystem mecanumNavigation = new GoBuildaChassisSubsystem(frontLeftMotor,frontRightMotor,backLeftMotor,backRightMotor,imu);
         mecanumNavigation.initialize(0,0,0);
-        mecanumNavigation.setVelocityMultipliers(0.2,0.2,0.2);
+        mecanumNavigation.setMaxVelocity(0.2,0.2,0.2);
+        mecanumNavigation.setMaxAcceleration(0.2,0.2,0.2);
+        mecanumNavigation.setTolerance(0.075,0.075,1);
 
         waitForStart();
 
