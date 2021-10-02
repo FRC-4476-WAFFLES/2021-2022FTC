@@ -55,7 +55,7 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
     private double ahMax = 1;
 
     // Set the default navigation tolerances in meters and degrees
-    private double xTol = 0.05;
+    private double dxTol = 0.05;
     private double yTol = 0.05;
     private double hTol = 0.5;
 
@@ -161,18 +161,44 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
      */
 
     public void setTolerance(double xTolerance, double yTolerance, double hTolerance){
-        xTol = xTolerance;
+        dxTol = xTolerance;
         yTol = yTolerance;
         hTol = hTolerance;
     }
 
     /**
      * Drive the robot to a specified destination.
-     * @param destinationX         X Co-ordinate of the target
-     * @param destinationY         Y Co-ordinate of the target
-     * @param destinationH         Heading of the target
+     * @param destinationX X Co-ordinate of the target
+     * @param destinationY Y Co-ordinate of the target
+     * @param destinationH Heading of the target
      */
-    public void goTo(double destinationX, double destinationY, double destinationH){
+    public void goTo(double destinationX, double destinationY, double destinationH) {
+        driveTo(new NavigationWaypoint(destinationX, destinationY, destinationH));
+    }
+
+    /**
+     * Drive the robot to a specified destination
+     * @param destination NavigationWaypoint destination
+     */
+    public void goTo(NavigationWaypoint destination){
+        driveTo(destination);
+    }
+
+    /**
+     * Drive the robot along a path
+     * @param route List of waypoints for the robot to follow
+     */
+    public void goTo(ArrayList<NavigationWaypoint> route){
+        for (int x = 0; x < route.size(); x++){
+            if (x + 1 < route.size()){
+                driveTo(route.get(x), route.get(x + 1));
+            } else {
+                driveTo(route.get(x));
+            }
+        }
+    }
+
+    private void driveTo(NavigationWaypoint waypoint){
         boolean isActive = true;
         runtime.reset();
         while (isActive){
@@ -194,9 +220,9 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
 
             chassisSpeeds = kinematics.toChassisSpeeds(wheelSpeeds);
 
-            double vx = getVX(destinationX);
-            double vy = getVY(destinationY);
-            double vh = getVH(destinationH);
+            double vx = getVX(waypoint.x, 0);
+            double vy = getVY(waypoint.y);
+            double vh = getVH(waypoint.h);
 
             chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(vx, vy, vh, gyroAngle);
             wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds);
@@ -217,26 +243,67 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
             }
         }
     }
+    
+    private void driveTo(NavigationWaypoint waypoint1, NavigationWaypoint waypoint2){
+        boolean isActive = true;
+        runtime.reset();
+        while (isActive){
+            double frontLeftSpeed;
+            double frontRightSpeed;
+            double backLeftSpeed;
+            double backRightSpeed;
 
-    public void goTo(ArrayList<NavigationWaypoint> route){
+            double currentHeading = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+            gyroAngle = Rotation2d.fromDegrees(currentHeading);
 
+            odometry.updateWithTime(runtime.time(), gyroAngle, wheelSpeeds);
+
+            wheelSpeeds = new MecanumDriveWheelSpeeds(
+                    frontLeftMotor.getVelocity() / METERS_TO_TICKS,
+                    frontRightMotor.getVelocity() / METERS_TO_TICKS,
+                    backLeftMotor.getVelocity() / METERS_TO_TICKS,
+                    backRightMotor.getVelocity() / METERS_TO_TICKS);
+
+            chassisSpeeds = kinematics.toChassisSpeeds(wheelSpeeds);
+
+            double vx = getVX(waypoint1.x, 0);
+            double vy = getVY(waypoint1.y);
+            double vh = getVH(waypoint1.h);
+
+            chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(vx, vy, vh, gyroAngle);
+            wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds);
+
+            frontLeftSpeed = wheelSpeeds.frontLeftMetersPerSecond;
+            frontRightSpeed = wheelSpeeds.frontRightMetersPerSecond;
+            backLeftSpeed = wheelSpeeds.rearLeftMetersPerSecond;
+            backRightSpeed = wheelSpeeds.rearRightMetersPerSecond;
+
+            frontLeftMotor.setVelocity(frontLeftSpeed * METERS_TO_TICKS);
+            frontRightMotor.setVelocity(frontRightSpeed * METERS_TO_TICKS);
+            backLeftMotor.setVelocity(backLeftSpeed * METERS_TO_TICKS);
+            backRightMotor.setVelocity(backRightSpeed * METERS_TO_TICKS);
+
+            if (vx == 0 && vy == 0 && vh == 0){
+                isActive = false;
+            }
+        }
     }
 
-    private double getVX(double target) {
+    private double getVX(double pxTarget) {
         double pxCur = odometry.getPoseMeters().getX();
         double vxCur = chassisSpeeds.vxMetersPerSecond;
-        double stopDistance = Math.pow(vxCur, 2) / (2 * axMax);
+        double dxStop = Math.pow(vxCur, 2) / (2 * axMax);
         double vx = 0;
-        if (pxCur < target - xTol) {
-            if (pxCur + stopDistance + xTol >= target) {
+        if (pxCur < pxTarget - dxTol) {
+            if (pxCur + dxStop + dxTol >= pxTarget) {
                 vx = vxCur - 0.1; // TODO: replace with code to actually decelerate the robot at the desired rate
             } else if (vxCur < vxMax) {
                 vx = vxCur + 0.1; // TODO: replace with code to accelerate the robot at the desired rate
             } else {
                 vx = vxMax;
             }
-        } else if (pxCur > target + xTol){
-            if (pxCur + stopDistance + xTol >= target) {
+        } else if (pxCur > pxTarget + dxTol){
+            if (pxCur + dxStop + dxTol >= pxTarget) {
                 vx = vxCur + 0.1; // TODO: replace with code to actually decelerate the robot at the desired rate
             } else if (vxCur < vxMax) {
                 vx = vxCur - 0.1; // TODO: replace with code to accelerate the robot at the desired rate
@@ -247,6 +314,33 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
             vx = 0;
         }
     return vx;
+    }
+
+    private double getVX(double pxTarget, double vxTarget){
+        double pxCur = odometry.getPoseMeters().getX();
+        double vxCur = chassisSpeeds.vxMetersPerSecond;
+        double dx_vxDelta = (Math.pow(vxCur, 2) - Math.pow(vxTarget, 2)) / (2 * axMax);
+        double vx = 0;
+        if (pxCur < pxTarget - dxTol) {
+            if (pxCur + dx_vxDelta + dxTol >= pxTarget) {
+                vx = vxCur - 0.1; // TODO: replace with code to actually decelerate the robot at the desired rate
+            } else if (vxCur < vxMax) {
+                vx = vxCur + 0.1; // TODO: replace with code to accelerate the robot at the desired rate
+            } else {
+                vx = vxMax;
+            }
+        } else if (pxCur > pxTarget + dxTol){
+            if (pxCur + dx_vxDelta + dxTol >= pxTarget) {
+                vx = vxCur + 0.1; // TODO: replace with code to actually decelerate the robot at the desired rate
+            } else if (vxCur < vxMax) {
+                vx = vxCur - 0.1; // TODO: replace with code to accelerate the robot at the desired rate
+            } else {
+                vx = -vxMax;
+            }
+        } else {
+            vx = 0;
+        }
+        return vx;
     }
 
     private double getVY(double target) {
