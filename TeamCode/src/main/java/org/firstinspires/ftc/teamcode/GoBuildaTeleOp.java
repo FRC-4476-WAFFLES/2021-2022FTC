@@ -66,11 +66,11 @@ public class GoBuildaTeleOp extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()){
-            if (gamepad1.x) {
+            if (driverOp.getButton(GamepadKeys.Button.X)) {
                 powerMultiplier = 0.33;
-            } else if (gamepad1.y) {
+            } else if (driverOp.getButton(GamepadKeys.Button.Y)) {
                 powerMultiplier = 0.66;
-            } else if (gamepad1.b) {
+            } else if (driverOp.getButton(GamepadKeys.Button.B)) {
                 powerMultiplier = 1;
             }
 
