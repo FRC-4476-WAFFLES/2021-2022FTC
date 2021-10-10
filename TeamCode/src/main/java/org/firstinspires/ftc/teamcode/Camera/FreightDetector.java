@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.Camera;
 
-import android.icu.text.Transliterator;
-
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -29,18 +27,18 @@ public class FreightDetector extends OpenCvPipeline {
     private barcodePosition position;
 
     public Rect leftROI = new Rect(
-            new Point(20, 20),
-            new Point(40, 40)
+            new Point(0, 300),
+            new Point(200, 700)
     );
 
     public Rect centerROI = new Rect(
-            new Point(50, 50),
-            new Point(100, 100)
+            new Point(540, 300),
+            new Point(740, 700)
     );
 
     public Rect rightROI = new Rect(
-            new Point(150, 150),
-            new Point(200, 200)
+            new Point(1080, 300),
+            new Point(1280, 700)
     );
 
     public FreightDetector(Telemetry t) {
@@ -78,9 +76,9 @@ public class FreightDetector extends OpenCvPipeline {
         Scalar emptyColour = new Scalar(0, 255, 0);
 
         // Create boxes around each ROI to highlight shipping element ROI
-        Imgproc.rectangle(frame, leftROI, (position == barcodePosition.LEFT) ? shippingColour : emptyColour);
-        Imgproc.rectangle(frame, centerROI, (position == barcodePosition.CENTER) ? shippingColour : emptyColour);
-        Imgproc.rectangle(frame, rightROI, (position == barcodePosition.RIGHT) ? shippingColour : emptyColour);
+        Imgproc.rectangle(frame, leftROI, (position == barcodePosition.LEFT) ? shippingColour : emptyColour, 10);
+        Imgproc.rectangle(frame, centerROI, (position == barcodePosition.CENTER) ? shippingColour : emptyColour, 10);
+        Imgproc.rectangle(frame, rightROI, (position == barcodePosition.RIGHT) ? shippingColour : emptyColour, 10);
 
         return frame;
     }
