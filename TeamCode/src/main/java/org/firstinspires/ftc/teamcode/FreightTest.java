@@ -1,14 +1,16 @@
-package org.firstinspires.ftc.teamcode.Camera;
+package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.teamcode.Camera.FreightDetector;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 
-@Autonomous(name="Freight Camera Testing")
+@TeleOp(name="Freight Camera Testing")
 public class FreightTest extends LinearOpMode {
 
     @Override
@@ -39,12 +41,12 @@ public class FreightTest extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()) {
-            telemetry.addData("Frame Count", webcam.getFrameCount());
+            /* telemetry.addData("Frame Count", webcam.getFrameCount());
             telemetry.addData("FPS", webcam.getFps());
             telemetry.addData("Total frame time (ms)", webcam.getTotalFrameTimeMs());
             telemetry.addData("Pipeline time (ms)", webcam.getPipelineTimeMs());
             telemetry.addData("Overhead time (ms)", webcam.getOverheadTimeMs());
-            telemetry.addData("Current Pipeline Max FPS", webcam.getCurrentPipelineMaxFps());
+            telemetry.addData("Current Pipeline Max FPS", webcam.getCurrentPipelineMaxFps()); */
             telemetry.update();
 
             sleep(100);
