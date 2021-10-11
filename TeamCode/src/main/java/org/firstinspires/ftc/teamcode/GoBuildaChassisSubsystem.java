@@ -49,15 +49,18 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
     private double vyMax = 1;
     private double vhMax = 1;
 
+    private double vTransMax = 1;
+    private double vRotMax = 10;
+
     // Set the default maximum chassis acceleration in meters per second per second
     private double axMax = 1;
     private double ayMax = 1;
     private double ahMax = 1;
 
     // Set the default navigation tolerances in meters and degrees
-    private double dxTol = 0.05;
-    private double yTol = 0.05;
-    private double hTol = 0.5;
+    private double pxTol = 0.05;
+    private double pyTol = 0.05;
+    private double phTol = 0.5;
 
     public GoBuildaChassisSubsystem(MotorEx frontLeftMotor, MotorEx frontRightMotor, MotorEx backLeftMotor, MotorEx backRightMotor, BNO055IMU imu){
         this.frontLeftMotor = frontLeftMotor;
@@ -137,6 +140,10 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
         vhMax = hVelocityMax;
     }
 
+    public void setMaxVelocity(double translate){
+        vTransMax = translate;
+    }
+
     /**
      * Set the maximum acceleration of the robot.
      * Units are meters per second per second and
@@ -161,9 +168,9 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
      */
 
     public void setTolerance(double xTolerance, double yTolerance, double hTolerance){
-        dxTol = xTolerance;
-        yTol = yTolerance;
-        hTol = hTolerance;
+        pxTol = xTolerance;
+        pyTol = yTolerance;
+        phTol = hTolerance;
     }
 
     /**
@@ -190,10 +197,111 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
      */
     public void goTo(ArrayList<NavigationWaypoint> route){
         for (int x = 0; x < route.size(); x++){
-            if (x + 1 < route.size()){
-                driveTo(route.get(x), route.get(x + 1));
-            } else {
-                driveTo(route.get(x));
+            driveTo(route.get(x), true);
+         }
+    }
+
+    private void driveTo(NavigationWaypoint waypoint, boolean foo){
+        double vxMultiplier;
+        double vyMultiplier;
+        double vhMultiplier;
+
+        double dx;
+        double dy;
+        double dh = 0;
+
+        double vx;
+        double vy;
+        double vh = 0;
+
+        if (waypoint.x == -1){
+            dx = 0;
+        } else {
+            dx = waypoint.x - odometry.getPoseMeters().getX();
+        }
+
+        if (waypoint.y == -1){
+            dy = 0;
+        } else {
+            dy = waypoint.y - odometry.getPoseMeters().getY();
+        }
+
+        if (waypoint.h == -1){
+            dh = 0;
+        } else {
+            dh = waypoint.h - (imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle + 180);
+        }
+
+        dx = Math.abs(dx);
+        dy = Math.abs(dy);
+        dh = Math.abs(dh);
+
+        if (Math.abs(dx) > Math.abs(dy)){
+            vx = vTransMax;
+            vy = (dy / dx) * vTransMax;
+        } else if (Math.abs(dx) < Math.abs(dy)){
+            vy = vTransMax;
+            vx = (dx / dy) * vTransMax;
+        } else {
+            vx = vTransMax;
+            vy = vTransMax;
+        }
+
+        if (dx < 0){
+            vx = -vx;
+        }
+        if (dy < 0){
+            vy = -vy;
+        }
+
+        runtime.reset();
+        boolean isFinished = false;
+        while (!isFinished){
+            double frontLeftSpeed;
+            double frontRightSpeed;
+            double backLeftSpeed;
+            double backRightSpeed;
+
+            double currentHeading = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+            gyroAngle = Rotation2d.fromDegrees(currentHeading);
+
+            wheelSpeeds = new MecanumDriveWheelSpeeds(
+                    frontLeftMotor.getVelocity() / METERS_TO_TICKS,
+                    frontRightMotor.getVelocity() / METERS_TO_TICKS,
+                    backLeftMotor.getVelocity() / METERS_TO_TICKS,
+                    backRightMotor.getVelocity() / METERS_TO_TICKS);
+
+            odometry.updateWithTime(runtime.time(), gyroAngle, wheelSpeeds);
+
+            if (odometry.getPoseMeters().getX() - waypoint.x < pxTol){
+                vx = 1;
+            } else if (odometry.getPoseMeters().getX() - waypoint.x > pxTol){
+                vx = -1;
+            }
+
+            if (Math.abs(odometry.getPoseMeters().getY() - waypoint.y) < pyTol){
+                vy = 0;
+            }
+
+            if (Math.abs(currentHeading - waypoint.h) < phTol){
+                vh = 0;
+            }
+
+            chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(vx, vy, vh, gyroAngle);
+            wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds);
+
+            frontLeftSpeed = wheelSpeeds.frontLeftMetersPerSecond;
+            frontRightSpeed = wheelSpeeds.frontRightMetersPerSecond;
+            backLeftSpeed = wheelSpeeds.rearLeftMetersPerSecond;
+            backRightSpeed = wheelSpeeds.rearRightMetersPerSecond;
+
+            frontLeftMotor.setVelocity(frontLeftSpeed * METERS_TO_TICKS);
+            frontRightMotor.setVelocity(frontRightSpeed * METERS_TO_TICKS);
+            backLeftMotor.setVelocity(backLeftSpeed * METERS_TO_TICKS);
+            backRightMotor.setVelocity(backRightSpeed * METERS_TO_TICKS);
+
+            if (vx == 0 && vy == 0 && vh == 0){
+                isFinished = true;
             }
         }
     }
@@ -243,67 +351,22 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
             }
         }
     }
-    
-    private void driveTo(NavigationWaypoint waypoint1, NavigationWaypoint waypoint2){
-        boolean isActive = true;
-        runtime.reset();
-        while (isActive){
-            double frontLeftSpeed;
-            double frontRightSpeed;
-            double backLeftSpeed;
-            double backRightSpeed;
-
-            double currentHeading = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
-            gyroAngle = Rotation2d.fromDegrees(currentHeading);
-
-            odometry.updateWithTime(runtime.time(), gyroAngle, wheelSpeeds);
-
-            wheelSpeeds = new MecanumDriveWheelSpeeds(
-                    frontLeftMotor.getVelocity() / METERS_TO_TICKS,
-                    frontRightMotor.getVelocity() / METERS_TO_TICKS,
-                    backLeftMotor.getVelocity() / METERS_TO_TICKS,
-                    backRightMotor.getVelocity() / METERS_TO_TICKS);
-
-            chassisSpeeds = kinematics.toChassisSpeeds(wheelSpeeds);
-
-            double vx = getVX(waypoint1.x, 0);
-            double vy = getVY(waypoint1.y);
-            double vh = getVH(waypoint1.h);
-
-            chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(vx, vy, vh, gyroAngle);
-            wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds);
-
-            frontLeftSpeed = wheelSpeeds.frontLeftMetersPerSecond;
-            frontRightSpeed = wheelSpeeds.frontRightMetersPerSecond;
-            backLeftSpeed = wheelSpeeds.rearLeftMetersPerSecond;
-            backRightSpeed = wheelSpeeds.rearRightMetersPerSecond;
-
-            frontLeftMotor.setVelocity(frontLeftSpeed * METERS_TO_TICKS);
-            frontRightMotor.setVelocity(frontRightSpeed * METERS_TO_TICKS);
-            backLeftMotor.setVelocity(backLeftSpeed * METERS_TO_TICKS);
-            backRightMotor.setVelocity(backRightSpeed * METERS_TO_TICKS);
-
-            if (vx == 0 && vy == 0 && vh == 0){
-                isActive = false;
-            }
-        }
-    }
 
     private double getVX(double pxTarget) {
         double pxCur = odometry.getPoseMeters().getX();
         double vxCur = chassisSpeeds.vxMetersPerSecond;
         double dxStop = Math.pow(vxCur, 2) / (2 * axMax);
         double vx = 0;
-        if (pxCur < pxTarget - dxTol) {
-            if (pxCur + dxStop + dxTol >= pxTarget) {
+        if (pxCur < pxTarget - pxTol) {
+            if (pxCur + dxStop + pxTol >= pxTarget) {
                 vx = vxCur - 0.1; // TODO: replace with code to actually decelerate the robot at the desired rate
             } else if (vxCur < vxMax) {
                 vx = vxCur + 0.1; // TODO: replace with code to accelerate the robot at the desired rate
             } else {
                 vx = vxMax;
             }
-        } else if (pxCur > pxTarget + dxTol){
-            if (pxCur + dxStop + dxTol >= pxTarget) {
+        } else if (pxCur > pxTarget + pxTol){
+            if (pxCur + dxStop + pxTol >= pxTarget) {
                 vx = vxCur + 0.1; // TODO: replace with code to actually decelerate the robot at the desired rate
             } else if (vxCur < vxMax) {
                 vx = vxCur - 0.1; // TODO: replace with code to accelerate the robot at the desired rate
@@ -321,16 +384,16 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
         double vxCur = chassisSpeeds.vxMetersPerSecond;
         double dx_vxDelta = (Math.pow(vxCur, 2) - Math.pow(vxTarget, 2)) / (2 * axMax);
         double vx = 0;
-        if (pxCur < pxTarget - dxTol) {
-            if (pxCur + dx_vxDelta + dxTol >= pxTarget) {
+        if (pxCur < pxTarget - pxTol) {
+            if (pxCur + dx_vxDelta + pxTol >= pxTarget) {
                 vx = vxCur - 0.1; // TODO: replace with code to actually decelerate the robot at the desired rate
             } else if (vxCur < vxMax) {
                 vx = vxCur + 0.1; // TODO: replace with code to accelerate the robot at the desired rate
             } else {
                 vx = vxMax;
             }
-        } else if (pxCur > pxTarget + dxTol){
-            if (pxCur + dx_vxDelta + dxTol >= pxTarget) {
+        } else if (pxCur > pxTarget + pxTol){
+            if (pxCur + dx_vxDelta + pxTol >= pxTarget) {
                 vx = vxCur + 0.1; // TODO: replace with code to actually decelerate the robot at the desired rate
             } else if (vxCur < vxMax) {
                 vx = vxCur - 0.1; // TODO: replace with code to accelerate the robot at the desired rate
@@ -348,16 +411,16 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
         double pyCur = odometry.getPoseMeters().getY();
         double stopDistance = Math.pow(vyCur, 2) / (2 * ayMax);
         double vy = 0;
-        if (pyCur < target - yTol) {
-            if (pyCur + stopDistance + yTol >= target) {
+        if (pyCur < target - pyTol) {
+            if (pyCur + stopDistance + pyTol >= target) {
                 vy = vyCur - 0.1; // TODO: replace with code to actually decelerate the robot at the desired rate
             } else if (vyCur < vyMax) {
                 vy = vyCur + 0.1; // TODO: replace with code to accelerate the robot at the desired rate
             } else {
                 vy = vyMax;
             }
-        } else if (pyCur > target + yTol){
-            if (pyCur + stopDistance + yTol >= target) {
+        } else if (pyCur > target + pyTol){
+            if (pyCur + stopDistance + pyTol >= target) {
                 vy = vyCur + 0.1; // TODO: replace with code to actually decelerate the robot at the desired rate
             } else if (vyCur < vyMax) {
                 vy = vyCur - 0.1; // TODO: replace with code to accelerate the robot at the desired rate
@@ -376,16 +439,16 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
         double stopDistance = Math.pow(vhCur, 2) / (2 * ahMax);
         double vh = 0;
 
-        if (phCur < target - hTol) {
-            if (phCur + stopDistance + hTol >= target) {
+        if (phCur < target - phTol) {
+            if (phCur + stopDistance + phTol >= target) {
                 vh = vhCur - 0.1; // TODO: replace with code to actually decelerate the robot at the desired rate
             } else if (vhCur < vhMax) {
                 vh = vhCur + 0.1; // TODO: replace with code to accelerate the robot at the desired rate
             } else {
                 vh = vhMax;
             }
-        } else if (phCur > target + hTol){
-            if (phCur + stopDistance + hTol >= target){
+        } else if (phCur > target + phTol){
+            if (phCur + stopDistance + phTol >= target){
                 vh = vhCur + 0.1;
             } else if (vhCur < vhMax){
                 vh = vhCur - 0.1;

@@ -55,5 +55,6 @@ public class GoBuildaAutoBase extends LinearOpMode {
         route1.add(p2);
         route1.add(new NavigationWaypoint(1,2));
         mecanumNavigation.goTo(route1);
+        mecanumNavigation.goTo(5,5, 5);
     }
 }

@@ -6,9 +6,9 @@ public class NavigationWaypoint {
     double h;
 
     NavigationWaypoint(){
-        this.x = 0;
-        this.y = 0;
-        this.h = 0;
+        this.x = -1;
+        this.y = -1;
+        this.h = -1;
     }
 
     public NavigationWaypoint(double x, double y){
