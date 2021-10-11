@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.arcrobotics.ftclib.drivebase.MecanumDrive;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
+import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.arcrobotics.ftclib.hardware.motors.MotorEx;
 import com.qualcomm.hardware.bosch.BNO055IMU;
@@ -27,6 +28,8 @@ public class GoBuildaTeleOp extends LinearOpMode {
 
     @Override
     public void runOpMode(){
+        double powerMultiplier = 1;
+
         frontLeftMotor = new MotorEx(hardwareMap, "FL", Motor.GoBILDA.RPM_312);
         frontRightMotor = new MotorEx(hardwareMap, "FR", Motor.GoBILDA.RPM_312);
         backLeftMotor = new MotorEx(hardwareMap, "BL", Motor.GoBILDA.RPM_312);
@@ -63,7 +66,16 @@ public class GoBuildaTeleOp extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()){
-            drive.driveFieldCentric(driverOp.getLeftX(), driverOp.getLeftY(), driverOp.getRightX(), imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
+            if (driverOp.getButton(GamepadKeys.Button.X)) {
+                powerMultiplier = 0.33;
+            } else if (driverOp.getButton(GamepadKeys.Button.Y)) {
+                powerMultiplier = 0.66;
+            } else if (driverOp.getButton(GamepadKeys.Button.B)) {
+                powerMultiplier = 1;
+            }
+
+            drive.driveFieldCentric(driverOp.getLeftX() * powerMultiplier, driverOp.getLeftY() * powerMultiplier, driverOp.getRightX() * powerMultiplier, imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
+
             telemetry.addData("LeftJoyX", driverOp.getLeftX());
             telemetry.addData("LeftJoyY", driverOp.getLeftY());
             telemetry.addData("RightJoyX", driverOp.getRightX());
