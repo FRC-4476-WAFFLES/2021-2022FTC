@@ -41,7 +41,7 @@ public class GoBuildaAutoBase extends LinearOpMode {
 
         GoBuildaChassisSubsystem mecanumNavigation = new GoBuildaChassisSubsystem(frontLeftMotor,frontRightMotor,backLeftMotor,backRightMotor,imu);
         mecanumNavigation.initialize(0,0,0);
-        mecanumNavigation.setMaxVelocity(1,1,1);
+        mecanumNavigation.setMaxVelocity(1);
         mecanumNavigation.setMaxAcceleration(1,1,.5);
         mecanumNavigation.setTolerance(0.05,0.05,0.5);
 
