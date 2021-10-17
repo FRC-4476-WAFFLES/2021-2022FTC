@@ -20,11 +20,7 @@ public class FreightDetector extends OpenCvPipeline {
     private int centerAverage;
     private int rightAverage;
 
-    public enum barcodePosition {
-        LEFT, CENTER, RIGHT
-    }
-
-    private barcodePosition position;
+    int targetLevel;
 
     public Rect leftROI = new Rect(
             new Point(0, 300),
@@ -64,11 +60,11 @@ public class FreightDetector extends OpenCvPipeline {
 
         // Check for which region meets the threshold
         if (leftAverage > THRESHOLD) {
-            position = barcodePosition.LEFT;
+            targetLevel = 1;
         } else if (centerAverage > THRESHOLD) {
-            position = barcodePosition.CENTER;
+            targetLevel = 2;
         } else {
-            position = barcodePosition.RIGHT;
+            targetLevel = 3;
         }
 
         // Colors for boxes around each ROI
@@ -76,14 +72,14 @@ public class FreightDetector extends OpenCvPipeline {
         Scalar emptyColour = new Scalar(0, 255, 0);
 
         // Create boxes around each ROI to highlight shipping element ROI
-        Imgproc.rectangle(frame, leftROI, (position == barcodePosition.LEFT) ? shippingColour : emptyColour, 10);
-        Imgproc.rectangle(frame, centerROI, (position == barcodePosition.CENTER) ? shippingColour : emptyColour, 10);
-        Imgproc.rectangle(frame, rightROI, (position == barcodePosition.RIGHT) ? shippingColour : emptyColour, 10);
+        Imgproc.rectangle(frame, leftROI, (targetLevel == 1) ? shippingColour : emptyColour, 10);
+        Imgproc.rectangle(frame, centerROI, (targetLevel == 2) ? shippingColour : emptyColour, 10);
+        Imgproc.rectangle(frame, rightROI, (targetLevel == 3) ? shippingColour : emptyColour, 10);
 
         return frame;
     }
 
-    public barcodePosition getPosition() {
-        return position;
+    public int getTargetLevel() {
+        return targetLevel;
     }
 }
