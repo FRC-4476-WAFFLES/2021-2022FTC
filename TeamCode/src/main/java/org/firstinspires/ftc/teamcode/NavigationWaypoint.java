@@ -4,11 +4,15 @@ public class NavigationWaypoint {
     double x;
     double y;
     double h;
+    boolean fieldRelative;
+    ElevatorLevels elevatorLevel;
 
     NavigationWaypoint(){
-        this.x = -1;
-        this.y = -1;
-        this.h = -1;
+        this.x = 0;
+        this.y = 0;
+        this.h = 0;
+        this.fieldRelative = true;
+        this.elevatorLevel = ElevatorLevels.CONSTANT;
     }
 
     public NavigationWaypoint(double x, double y){
@@ -20,5 +24,46 @@ public class NavigationWaypoint {
         this.x = x;
         this.y = y;
         this.h = h;
+    }
+
+    public NavigationWaypoint(double x, double y, boolean fieldRelative){
+        this.x = x;
+        this.y = y;
+        this.fieldRelative = fieldRelative;
+    }
+
+    public NavigationWaypoint(double x, double y, double h, boolean fieldRelative){
+        this.x = x;
+        this.y = y;
+        this.h = h;
+        this.fieldRelative = fieldRelative;
+    }
+
+    public NavigationWaypoint(double x, double y, ElevatorLevels elevatorLevel){
+        this.x = x;
+        this.y = y;
+        this.elevatorLevel = elevatorLevel;
+    }
+
+    public NavigationWaypoint(double x, double y, double h, ElevatorLevels elevatorLevel){
+        this.x = x;
+        this.y = y;
+        this.h = h;
+        this.elevatorLevel = elevatorLevel;
+    }
+
+    public NavigationWaypoint(double x, double y, boolean fieldRelative, ElevatorLevels elevatorLevel){
+        this.x = x;
+        this.y = y;
+        this.fieldRelative = fieldRelative;
+        this.elevatorLevel = elevatorLevel;
+    }
+
+    public NavigationWaypoint(double x, double y, double h, boolean fieldRelative, ElevatorLevels elevatorLevel){
+        this.x = x;
+        this.y = y;
+        this.h = h;
+        this.fieldRelative = fieldRelative;
+        this.elevatorLevel = elevatorLevel;
     }
 }

@@ -15,6 +15,11 @@ public class GoBuildaAutoBase extends LinearOpMode {
     private MotorEx backLeftMotor;
     private MotorEx backRightMotor;
 
+    private MotorEx elevatorMotor;
+    private MotorEx angleMotor;
+
+    private MotorEx intakeMotor;
+
     private BNO055IMU imu;
 
     @Override
@@ -23,6 +28,11 @@ public class GoBuildaAutoBase extends LinearOpMode {
         frontRightMotor = new MotorEx(hardwareMap, "FR", Motor.GoBILDA.RPM_312);
         backLeftMotor = new MotorEx(hardwareMap, "BL", Motor.GoBILDA.RPM_312);
         backRightMotor = new MotorEx(hardwareMap, "BR", Motor.GoBILDA.RPM_312);
+
+        elevatorMotor = new MotorEx(hardwareMap, "Elevator");
+        angleMotor = new MotorEx(hardwareMap, "Angle");
+
+        intakeMotor = new MotorEx(hardwareMap, "Intake");
 
         imu = hardwareMap.get(BNO055IMU.class, "imu");
 
@@ -42,8 +52,10 @@ public class GoBuildaAutoBase extends LinearOpMode {
         GoBuildaChassisSubsystem mecanumNavigation = new GoBuildaChassisSubsystem(frontLeftMotor,frontRightMotor,backLeftMotor,backRightMotor,imu);
         mecanumNavigation.initialize(0,0,0);
         mecanumNavigation.setMaxVelocity(1);
-        mecanumNavigation.setMaxAcceleration(1,1,.5);
         mecanumNavigation.setTolerance(0.05,0.05,0.5);
+
+        ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(elevatorMotor, intakeMotor);
+        elevatorSubsystem.initialize();
 
         waitForStart();
 
@@ -56,5 +68,7 @@ public class GoBuildaAutoBase extends LinearOpMode {
         route1.add(new NavigationWaypoint(1,2));
         mecanumNavigation.goTo(route1);
         mecanumNavigation.goTo(5,5, 5);
+
+        elevatorSubsystem.goTo(ElevatorSubsystem.ElevatorLevels.INTAKE);
     }
 }

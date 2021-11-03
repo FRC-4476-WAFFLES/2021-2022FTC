@@ -20,9 +20,13 @@ public class GoBuildaTeleOp extends LinearOpMode {
     private MotorEx backLeftMotor;
     private MotorEx backRightMotor;
 
+    private MotorEx elevatorMotor;
+    private MotorEx intakeMotor;
+
     private MecanumDrive drive;
 
-    private GamepadEx driverOp;
+    private GamepadEx driverJoystick;
+    private GamepadEx operatorJoystick;
 
     private BNO055IMU imu;
 
@@ -35,6 +39,9 @@ public class GoBuildaTeleOp extends LinearOpMode {
         backLeftMotor = new MotorEx(hardwareMap, "BL", Motor.GoBILDA.RPM_312);
         backRightMotor = new MotorEx(hardwareMap, "BR", Motor.GoBILDA.RPM_312);
 
+        elevatorMotor = new MotorEx(hardwareMap, "Elevator");
+        intakeMotor = new MotorEx(hardwareMap, "Intake");
+
         frontLeftMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         frontRightMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         backLeftMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
@@ -46,7 +53,8 @@ public class GoBuildaTeleOp extends LinearOpMode {
         backRightMotor.setInverted(true);
 
         drive = new MecanumDrive(frontLeftMotor,frontRightMotor,backLeftMotor,backRightMotor);
-        driverOp = new GamepadEx(gamepad1);
+        driverJoystick = new GamepadEx(gamepad1);
+        operatorJoystick = new GamepadEx(gamepad2);
 
         imu = hardwareMap.get(BNO055IMU.class, "imu");
 
@@ -66,19 +74,31 @@ public class GoBuildaTeleOp extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()){
-            if (driverOp.getButton(GamepadKeys.Button.X)) {
+            if (driverJoystick.getButton(GamepadKeys.Button.X)) {
                 powerMultiplier = 0.33;
-            } else if (driverOp.getButton(GamepadKeys.Button.Y)) {
+            } else if (driverJoystick.getButton(GamepadKeys.Button.Y)) {
                 powerMultiplier = 0.66;
-            } else if (driverOp.getButton(GamepadKeys.Button.B)) {
+            } else if (driverJoystick.getButton(GamepadKeys.Button.B)) {
                 powerMultiplier = 1;
             }
 
-            drive.driveFieldCentric(driverOp.getLeftX() * powerMultiplier, driverOp.getLeftY() * powerMultiplier, driverOp.getRightX() * powerMultiplier, imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
+            drive.driveFieldCentric(driverJoystick.getLeftX() * powerMultiplier, driverJoystick.getLeftY() * powerMultiplier, driverJoystick.getRightX() * powerMultiplier, imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
 
-            telemetry.addData("LeftJoyX", driverOp.getLeftX());
-            telemetry.addData("LeftJoyY", driverOp.getLeftY());
-            telemetry.addData("RightJoyX", driverOp.getRightX());
+            elevatorMotor.set(operatorJoystick.getLeftY());
+            intakeMotor.set(operatorJoystick.getRightY());
+
+            /*
+            if (operatorJoystick.getButton(GamepadKeys.Button.A)){
+                intakeMotor.set(1);
+            } else if (operatorJoystick.getButton(GamepadKeys.Button.B)){
+                intakeMotor.set(-1);
+            } else {
+                intakeMotor.set(0);
+            }*/
+
+            telemetry.addData("LeftJoyX", driverJoystick.getLeftX());
+            telemetry.addData("LeftJoyY", driverJoystick.getLeftY());
+            telemetry.addData("RightJoyX", driverJoystick.getRightX());
             telemetry.addData("Yaw", imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
             telemetry.update();
         }
