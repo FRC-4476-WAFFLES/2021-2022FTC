@@ -6,6 +6,8 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
+import org.firstinspires.ftc.teamcode.Subsystems.ElevatorSubsystem;
+
 import java.util.ArrayList;
 
 @Autonomous(name = "Gobuilda Auto Base")
@@ -69,6 +71,6 @@ public class GoBuildaAutoBase extends LinearOpMode {
         mecanumNavigation.goTo(route1);
         mecanumNavigation.goTo(5,5, 5);
 
-        elevatorSubsystem.goTo(ElevatorSubsystem.ElevatorLevels.INTAKE);
+        elevatorSubsystem.goTo(ElevatorSubsystem.Levels.INTAKE);
     }
 }

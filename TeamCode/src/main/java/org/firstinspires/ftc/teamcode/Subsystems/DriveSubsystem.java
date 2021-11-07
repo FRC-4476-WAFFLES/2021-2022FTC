@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.Subsystems;
 
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.arcrobotics.ftclib.geometry.Pose2d;
@@ -16,6 +16,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.teamcode.NavigationWaypoint;
 
 import java.util.ArrayList;
 
@@ -215,6 +216,14 @@ public class DriveSubsystem extends SubsystemBase {
         }
     }
 
+    public void stop(){
+        enRoute = false;
+        frontLeftMotor.stopMotor();
+        frontRightMotor.stopMotor();
+        backLeftMotor.stopMotor();
+        backRightMotor.stopMotor();
+    }
+
     private void driveTo(NavigationWaypoint waypoint){
         runtime.reset();
         boolean isFinished = false;
@@ -323,7 +332,7 @@ public class DriveSubsystem extends SubsystemBase {
     }
 
     private void nextWaypoint(){
-        if (currentWaypointNumber < route.size()){
+        if (currentWaypointNumber < route.size() - 1){
             currentWaypointNumber++;
             currentWaypoint = route.get(currentWaypointNumber);
         } else {

@@ -6,12 +6,21 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
-@Autonomous(name="Square")
-public class DriveSquare extends LinearOpMode {
+import org.firstinspires.ftc.teamcode.Subsystems.DriveSubsystem;
+import org.firstinspires.ftc.teamcode.Subsystems.ElevatorSubsystem;
+import org.firstinspires.ftc.teamcode.Subsystems.IntakeSubsystem;
+
+@Autonomous(name = "test")
+public class Test extends LinearOpMode {
     private MotorEx frontLeftMotor;
     private MotorEx frontRightMotor;
     private MotorEx backLeftMotor;
     private MotorEx backRightMotor;
+
+    private MotorEx elevatorMotor;
+    private MotorEx angleMotor;
+
+    private MotorEx intakeMotor;
 
     private BNO055IMU imu;
 
@@ -21,6 +30,11 @@ public class DriveSquare extends LinearOpMode {
         frontRightMotor = new MotorEx(hardwareMap, "FR", Motor.GoBILDA.RPM_312);
         backLeftMotor = new MotorEx(hardwareMap, "BL", Motor.GoBILDA.RPM_312);
         backRightMotor = new MotorEx(hardwareMap, "BR", Motor.GoBILDA.RPM_312);
+
+        elevatorMotor = new MotorEx(hardwareMap, "Elevator");
+        angleMotor = new MotorEx(hardwareMap, "Angle");
+
+        intakeMotor = new MotorEx(hardwareMap, "Intake");
 
         imu = hardwareMap.get(BNO055IMU.class, "imu");
 
@@ -37,17 +51,23 @@ public class DriveSquare extends LinearOpMode {
         // Initialize IMU.
         imu.initialize(imuParameters);
 
-        GoBuildaChassisSubsystem mecanumNavigation = new GoBuildaChassisSubsystem(frontLeftMotor,frontRightMotor,backLeftMotor,backRightMotor,imu);
-        mecanumNavigation.initialize(0,0,0);
-        mecanumNavigation.setMaxVelocity(0.2);
-        mecanumNavigation.setMaxAcceleration(0.2,0.2,0.2);
-        mecanumNavigation.setTolerance(0.075,0.075,1);
+        DriveSubsystem driveSubsystem = new DriveSubsystem(frontLeftMotor, frontRightMotor, backLeftMotor, backRightMotor, imu);
+        ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(elevatorMotor, angleMotor);
+        IntakeSubsystem intakeSubsystem = new IntakeSubsystem(intakeMotor);
+
+        driveSubsystem.initialize(0, 0, 0);
+        elevatorSubsystem.initialize();
 
         waitForStart();
 
-        mecanumNavigation.goTo(.5,0,0);
-        mecanumNavigation.goTo(.5,.5,0);
-        mecanumNavigation.goTo(0,.5,0);
-        mecanumNavigation.goTo(0,0,0);
+        elevatorSubsystem.deploy();
+
+        while (opModeIsActive()){
+            if (isStopRequested()){
+                driveSubsystem.stop();
+                elevatorSubsystem.stop();
+                intakeSubsystem.stop();
+            }
+        }
     }
 }
