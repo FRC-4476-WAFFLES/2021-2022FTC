@@ -1,16 +1,19 @@
 package org.firstinspires.ftc.teamcode.Camera;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.Subsystems.ElevatorSubsystem;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.core.Rect;
 import org.opencv.core.Point;
+import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvPipeline;
 
 public class FreightDetector extends OpenCvPipeline {
     Telemetry telemetry;
+    private OpenCvCamera webcam;
 
     Mat image = new Mat();
 
@@ -20,25 +23,26 @@ public class FreightDetector extends OpenCvPipeline {
     private int centerAverage;
     private int rightAverage;
 
-    int targetLevel;
+    private ElevatorSubsystem.Levels targetLevel;
 
     public Rect leftROI = new Rect(
-            new Point(0, 300),
-            new Point(200, 700)
+            new Point(175, 0),
+            new Point(375, 300)
     );
 
     public Rect centerROI = new Rect(
-            new Point(540, 300),
-            new Point(740, 700)
+            new Point(550, 0),
+            new Point(750, 300)
     );
 
     public Rect rightROI = new Rect(
-            new Point(1080, 300),
-            new Point(1280, 700)
+            new Point(900, 0),
+            new Point(1100, 300)
     );
 
-    public FreightDetector(Telemetry t) {
-        telemetry = t;
+    public FreightDetector(Telemetry telemetry) {
+        this.targetLevel = ElevatorSubsystem.Levels.CONSTANT;
+        this.telemetry = telemetry;
     }
 
     @Override
@@ -53,18 +57,13 @@ public class FreightDetector extends OpenCvPipeline {
         centerAverage = (int) Core.mean(image.submat(centerROI)).val[0];
         rightAverage = (int) Core.mean(image.submat(rightROI)).val[0];
 
-        telemetry.addData("leftAverage:", leftAverage);
-        telemetry.addData("centerAverage:", centerAverage);
-        telemetry.addData("rightAverage:", rightAverage);
-        telemetry.update();
-
         // Check for which region meets the threshold
         if (leftAverage > THRESHOLD) {
-            targetLevel = 1;
+            targetLevel = ElevatorSubsystem.Levels.L1;
         } else if (centerAverage > THRESHOLD) {
-            targetLevel = 2;
-        } else {
-            targetLevel = 3;
+            targetLevel = ElevatorSubsystem.Levels.L2;
+        } else if (rightAverage > THRESHOLD) {
+            targetLevel = ElevatorSubsystem.Levels.L3;
         }
 
         // Colors for boxes around each ROI
@@ -72,14 +71,16 @@ public class FreightDetector extends OpenCvPipeline {
         Scalar emptyColour = new Scalar(0, 255, 0);
 
         // Create boxes around each ROI to highlight shipping element ROI
-        Imgproc.rectangle(frame, leftROI, (targetLevel == 1) ? shippingColour : emptyColour, 10);
-        Imgproc.rectangle(frame, centerROI, (targetLevel == 2) ? shippingColour : emptyColour, 10);
-        Imgproc.rectangle(frame, rightROI, (targetLevel == 3) ? shippingColour : emptyColour, 10);
+        Imgproc.rectangle(frame, leftROI, (targetLevel == ElevatorSubsystem.Levels.L1) ? shippingColour : emptyColour, 10);
+        Imgproc.rectangle(frame, centerROI, (targetLevel == ElevatorSubsystem.Levels.L2) ? shippingColour : emptyColour, 10);
+        Imgproc.rectangle(frame, rightROI, (targetLevel == ElevatorSubsystem.Levels.L3) ? shippingColour : emptyColour, 10);
+
+        telemetry.addData("Target Level in Process Frame", targetLevel);
 
         return frame;
     }
 
-    public int getTargetLevel() {
-        return targetLevel;
+    public ElevatorSubsystem.Levels getTargetLevel() {
+        return this.targetLevel;
     }
 }
