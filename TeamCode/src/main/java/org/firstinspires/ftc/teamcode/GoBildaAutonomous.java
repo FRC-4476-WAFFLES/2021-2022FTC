@@ -38,7 +38,6 @@ public class GoBildaAutonomous extends LinearOpMode {
 
     private IntakeSubsystem intake;
     private ElevatorSubsystem elevator;
-    private DetectionSubsystem detector;
     private DriveSubsystem chassis;
 
     private int cameraMonitorViewId;
