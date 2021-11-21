@@ -12,7 +12,7 @@ import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 
-@Autonomous(name="The Best Autonomous Program Ever")
+@Autonomous(name="The Best Autonomous Program Ever1")
 public class GoatedAutonomous extends LinearOpMode {
     private MotorEx frontLeftMotor;
     private MotorEx frontRightMotor;
@@ -57,6 +57,7 @@ public class GoatedAutonomous extends LinearOpMode {
         webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam 1"), cameraMonitorViewId);
 
         // Set pipeline to Freight Detector
+        /*
         pipeline = new FreightDetector(telemetry);
         webcam.setPipeline(pipeline);
 
@@ -74,7 +75,7 @@ public class GoatedAutonomous extends LinearOpMode {
                 telemetry.addData("Failed to open webcam. Error code:", errorCode);
                 telemetry.update();
             }
-        });
+        });*/
 
         telemetry.addLine("Waiting for start...");
         telemetry.update();
@@ -82,7 +83,7 @@ public class GoatedAutonomous extends LinearOpMode {
         waitForStart();
 
         // Autonomous activities
-        targetLevel = pipeline.getTargetLevel();
+        // targetLevel = pipeline.getTargetLevel();
         mecanumNavigation.goTo(0.8,1.3,0);
 
         while (opModeIsActive()) {

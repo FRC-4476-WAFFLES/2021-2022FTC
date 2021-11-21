@@ -1,11 +1,14 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.arcrobotics.ftclib.hardware.ServoEx;
+import com.arcrobotics.ftclib.hardware.SimpleServo;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.arcrobotics.ftclib.hardware.motors.MotorEx;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Subsystems.ElevatorSubsystem;
 
 import java.util.ArrayList;
@@ -19,6 +22,8 @@ public class GoBuildaAutoBase extends LinearOpMode {
 
     private MotorEx elevatorMotor;
     private MotorEx angleMotor;
+
+    private ServoEx lockServo;
 
     private MotorEx intakeMotor;
 
@@ -35,6 +40,8 @@ public class GoBuildaAutoBase extends LinearOpMode {
         angleMotor = new MotorEx(hardwareMap, "Angle");
 
         intakeMotor = new MotorEx(hardwareMap, "Intake");
+
+        lockServo = new SimpleServo(hardwareMap, "Lock", 0, 90, AngleUnit.DEGREES);
 
         imu = hardwareMap.get(BNO055IMU.class, "imu");
 
@@ -56,7 +63,7 @@ public class GoBuildaAutoBase extends LinearOpMode {
         mecanumNavigation.setMaxVelocity(1);
         mecanumNavigation.setTolerance(0.05,0.05,0.5);
 
-        ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(elevatorMotor, intakeMotor);
+        ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(elevatorMotor, intakeMotor, lockServo);
         elevatorSubsystem.initialize();
 
         waitForStart();

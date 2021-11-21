@@ -257,6 +257,11 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
         double dy;
         double dh;
 
+        dx = waypoint.x - odometry.getPoseMeters().getX();
+        dy = waypoint.y - odometry.getPoseMeters().getY();
+        dh = waypoint.h - imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+
+        /*
         if (waypoint.x == -1){
             dx = 0;
         } else {
@@ -273,21 +278,18 @@ public class GoBuildaChassisSubsystem extends SubsystemBase {
             dh = 0;
         } else {
             dh = waypoint.h - (imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle + 180);
-
-            if (dh < 0){
-                dh += 360;
-            }
         }
+        */
 
         if (Math.abs(dx) <= pxTol){
             dx = 0;
         }
 
-        if (Math.abs(dy) < pyTol){
+        if (Math.abs(dy) <= pyTol){
             dy = 0;
         }
 
-        if (Math.abs(dh) < phTol){
+        if (Math.abs(dh) <= phTol){
             dh = 0;
         }
 
