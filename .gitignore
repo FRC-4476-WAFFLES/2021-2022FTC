@@ -242,3 +242,9 @@ lint/tmp/
 
 # Gradle Wrapper
 wrapper/
+
+native/
+
+caches/
+
+daemon/
