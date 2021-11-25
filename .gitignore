@@ -239,3 +239,6 @@ lint/generated/
 lint/outputs/
 lint/tmp/
 # lint/reports/
+
+# Gradle Wrapper
+wrapper/
