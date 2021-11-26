@@ -11,13 +11,9 @@ import com.arcrobotics.ftclib.kinematics.wpilibkinematics.ChassisSpeeds;
 import com.arcrobotics.ftclib.kinematics.wpilibkinematics.MecanumDriveKinematics;
 import com.arcrobotics.ftclib.kinematics.wpilibkinematics.MecanumDriveOdometry;
 import com.arcrobotics.ftclib.kinematics.wpilibkinematics.MecanumDriveWheelSpeeds;
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.teamcode.NavigationWaypoint;
 
 public class DriveSubsystem extends SubsystemBase {
@@ -29,14 +25,12 @@ public class DriveSubsystem extends SubsystemBase {
     private final MotorEx backLeftMotor;
     private final MotorEx backRightMotor;
 
-    private final BNO055IMU imu;
+    private final GyroEx gyro;
 
     private final double CPR = 2150.8; // Encoder ticks per wheel rotation
     private final double WHEEL_DIAMETER = 101.6; // Wheel diameter in millimeters
     private final double MM_PER_TICK = (WHEEL_DIAMETER * 3.141592 / CPR) * 3; // Wheel distance traveled per encoder tick in millimeters
     private final double METERS_TO_TICKS = (1 / MM_PER_TICK) * 1000; // Convert meters per second to ticks per second
-
-    private final double RADIANS_TO_DEGREES = 180 / 3.141592; // Convert radians per second to degrees per second
 
     // Create the objects needed for odometry and kinematics
     private MecanumDriveKinematics kinematics;
@@ -53,17 +47,17 @@ public class DriveSubsystem extends SubsystemBase {
     // Set the default maximum chassis speeds in meters per second
     private double vMax = 1;
 
-    // Set the default navigation tolerances in meters and degrees
+    // Set the default navigation tolerances in meters and radians
     private double pxTol = 0.05;
     private double pyTol = 0.05;
-    private double phTol = 3;
+    private double phTol = 0.05;
 
-    public DriveSubsystem(MotorEx frontLeftMotor, MotorEx frontRightMotor, MotorEx backLeftMotor, MotorEx backRightMotor, BNO055IMU imu){
+    public DriveSubsystem(MotorEx frontLeftMotor, MotorEx frontRightMotor, MotorEx backLeftMotor, MotorEx backRightMotor, GyroEx gyro){
         this.frontLeftMotor = frontLeftMotor;
         this.frontRightMotor = frontRightMotor;
         this.backLeftMotor = backLeftMotor;
         this.backRightMotor = backRightMotor;
-        this.imu = imu;
+        this.gyro = gyro;
     }
 
     /**
@@ -105,6 +99,8 @@ public class DriveSubsystem extends SubsystemBase {
         backLeftMotor.setDistancePerPulse(MM_PER_TICK);
         backRightMotor.setDistancePerPulse(MM_PER_TICK);
 
+        gyro.init();
+
         // Setup the odometry system
         // Set the locations of the wheels on the robot
         Translation2d frontLeftLocation = new Translation2d(0.167,0.195);
@@ -114,7 +110,7 @@ public class DriveSubsystem extends SubsystemBase {
         // Create a mecanum kinematics object from the wheel locations
         kinematics = new MecanumDriveKinematics(frontLeftLocation, frontRightLocation, backLeftLocation, backRightLocation);
         // Create an object to hold the angle of the robot as reported by the IMU
-        gyroAngle = Rotation2d.fromDegrees(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle - 90);
+        gyroAngle = gyro.getRotation2d();
         // Create a chassis speeds object relative to the field - format is (desired speed relative to one wall, desired speed relative to second wall, desired rotation speed in radians, current angle)
         chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(0,0,0, gyroAngle);
         // Get wheel speeds from the chassis speed
@@ -135,110 +131,100 @@ public class DriveSubsystem extends SubsystemBase {
         vMax = translate;
     }
 
-    public void translate(double x, double y, boolean fieldRelative, Telemetry telemetry){
+    public void translate(double x, double y, double h, boolean fieldRelative, Telemetry telemetry){
         updateOdometry();
-        if (!fieldRelative) {
-            x += odometry.getPoseMeters().getX();
-            y += odometry.getPoseMeters().getY();
+
+        Rotation2d heading = getHeadingAsRotation2d();
+
+        final Pose2d destination;
+
+        if (fieldRelative) {
+            destination = new Pose2d(x, y, Rotation2d.fromDegrees(h));
+        } else {
+            destination = new Pose2d(x + odometry.getPoseMeters().getX(), y + odometry.getPoseMeters().getY(), heading.plus(Rotation2d.fromDegrees(h)));
         }
 
-        while (true) {
-            double xMultiplier;
-            double yMultiplier;
+        while (true){
+            double vxMultiplier;
+            double vyMultiplier;
+            double vhMultiplier;
 
             updateOdometry();
-            gyroAngle = getHeadingAsRotation2d();
 
-            double dx = x - odometry.getPoseMeters().getX();
-            double dy = y - odometry.getPoseMeters().getY();
+            heading = getHeadingAsRotation2d();
 
-            if (dx < pxTol && dy < pyTol){
+            ChassisSpeeds speeds;
+
+            if (Math.abs(odometry.getPoseMeters().getX() - destination.getX()) < pxTol){
+                vxMultiplier = 0;
+            } else if (odometry.getPoseMeters().getX() < destination.getX()){
+                vxMultiplier = 1;
+            } else {
+                vxMultiplier = -1;
+            }
+
+            if (Math.abs(odometry.getPoseMeters().getY() - destination.getY()) < pyTol){
+                vyMultiplier = 0;
+            } else if (odometry.getPoseMeters().getY() < destination.getY()){
+                vyMultiplier = 1;
+            } else {
+                vyMultiplier = -1;
+            }
+
+            if (Math.abs(heading.getRadians() - destination.getHeading()) < phTol){
+                vhMultiplier = 0;
+            } else if (heading.getRadians() < destination.getHeading()){
+                vhMultiplier = 1;
+            } else {
+                vhMultiplier = -1;
+            }
+
+            if (vxMultiplier == 0 && vyMultiplier == 0 && vhMultiplier == 0){
                 break;
             }
 
-            boolean xIsNegative = dx < 0;
-            boolean yIsNegative = dy < 0;
-
-            dx = Math.abs(dx);
-            dy = Math.abs(dy);
-
-            if (dx > dy){
-                xMultiplier = 1;
-                yMultiplier = dy/dx;
+            if (fieldRelative){
+                speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vxMultiplier * vMax, vyMultiplier * vMax, vhMultiplier * vMax, heading);
             } else {
-                yMultiplier = 1;
-                xMultiplier = dx/dy;
+                speeds = new ChassisSpeeds(vxMultiplier * vMax, vyMultiplier * vMax, vhMultiplier * vMax);
             }
 
-            if (xIsNegative) {
-                xMultiplier *= -1;
-            }
-            if (yIsNegative) {
-                yMultiplier *= -1;
-            }
+            setMotors(kinematics.toWheelSpeeds(speeds));
 
-            telemetry.addData("Current X", odometry.getPoseMeters().getX());
-            telemetry.addData("Current Y", odometry.getPoseMeters().getY());
-            telemetry.addData("Target X", x);
-            telemetry.addData("Target Y", y);
-            telemetry.addData("dx", dx);
-            telemetry.addData("dy", dy);
-            telemetry.addData("xMultiplier", xMultiplier);
-            telemetry.addData("yMultiplier", yMultiplier);
-            telemetry.addData("xIsNegative", xIsNegative)
-                    .addData("yIsNegative", yIsNegative);
-            telemetry.addData("Heading", gyroAngle.getDegrees());
-            telemetry.addData("Motor Speeds", kinematics.toWheelSpeeds(ChassisSpeeds.fromFieldRelativeSpeeds(
-                    xMultiplier * vMax,
-                    yMultiplier * vMax,
-                    0,
-                    gyroAngle)));
+            telemetry.addData("Field Relative", fieldRelative);
+            telemetry.addData("Location", odometry.getPoseMeters());
+            telemetry.addLine();
+            telemetry.addData("Destination", destination);
+            telemetry.addLine();
+            telemetry.addData("x Multiplier", vxMultiplier);
+            telemetry.addData("y Multiplier", vyMultiplier);
+            telemetry.addData("h Multiplier", vhMultiplier);
             telemetry.update();
-
-            setMotors(kinematics.toWheelSpeeds(ChassisSpeeds.fromFieldRelativeSpeeds(
-                    xMultiplier * vMax,
-                    yMultiplier * vMax,
-                    0,
-                    gyroAngle)));
         }
 
-        setMotors(new MecanumDriveWheelSpeeds(0, 0, 0, 0));
-    }
-
-    public void rotate(double h, Telemetry telemetry){
-        double heading = getHeading();
-        while (Math.abs(h - heading) > phTol) {
-            if (h > heading){
-                setMotors(new MecanumDriveWheelSpeeds(-.5, .5, -.5, .5));
-            } else {
-                setMotors(new MecanumDriveWheelSpeeds(.5, -.5, .5, -.5));
-            }
-
-            telemetry.addData("Heading Difference", Math.abs(h - heading));
-            telemetry.update();
-
-            heading = getHeading();
-        }
-
-        setMotors(new MecanumDriveWheelSpeeds(0, 0, 0, 0));
+        stop();
     }
 
     public void stop(){
-        isActive = false;
-        frontLeftMotor.stopMotor();
-        frontRightMotor.stopMotor();
-        backLeftMotor.stopMotor();
-        backRightMotor.stopMotor();
+        frontLeftMotor.setVelocity(0);
+        frontRightMotor.setVelocity(0);
+        backLeftMotor.setVelocity(0);
+        backRightMotor.setVelocity(0);
+        wheelSpeeds = new MecanumDriveWheelSpeeds(0, 0, 0, 0);
+        frontLeftMotor.disable();
+        frontRightMotor.disable();
+        backLeftMotor.disable();
+        backRightMotor.disable();
     }
 
     private void updateOdometry(){
         odometry.updateWithTime(runtime.time(),
                 getHeadingAsRotation2d(),
                 new MecanumDriveWheelSpeeds(
-                        frontLeftMotor.getVelocity() / METERS_TO_TICKS,
-                        frontRightMotor.getVelocity() / METERS_TO_TICKS,
-                        backLeftMotor.getVelocity() / METERS_TO_TICKS,
-                        backRightMotor.getVelocity() / METERS_TO_TICKS));
+                frontLeftMotor.getVelocity() / METERS_TO_TICKS,
+                frontRightMotor.getVelocity() / METERS_TO_TICKS,
+                backLeftMotor.getVelocity() / METERS_TO_TICKS,
+                backRightMotor.getVelocity() / METERS_TO_TICKS));
     }
 
     private Rotation2d getHeadingAsRotation2d(){
@@ -246,7 +232,13 @@ public class DriveSubsystem extends SubsystemBase {
     }
 
     private double getHeading(){
-        return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+        double heading = gyro.getAbsoluteHeading() - hStart;
+        if (heading < -180) {
+            heading += 360;
+        } else if (heading > 180) {
+            heading -= 360;
+        }
+        return heading;
     }
 
     private void setMotors(MecanumDriveWheelSpeeds wheelSpeeds){

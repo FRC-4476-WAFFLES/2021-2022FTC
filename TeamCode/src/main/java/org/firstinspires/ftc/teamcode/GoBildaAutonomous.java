@@ -13,7 +13,6 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Camera.FreightDetector;
-import org.firstinspires.ftc.teamcode.Subsystems.DetectionSubsystem;
 import org.firstinspires.ftc.teamcode.Subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.Subsystems.ElevatorSubsystem;
 import org.firstinspires.ftc.teamcode.Subsystems.IntakeSubsystem;
@@ -34,7 +33,7 @@ public class GoBildaAutonomous extends LinearOpMode {
 
     private ServoEx lockServo;
 
-    private BNO055IMU imu;
+    private GyroEx gyro;
 
     private IntakeSubsystem intake;
     private ElevatorSubsystem elevator;
@@ -58,22 +57,9 @@ public class GoBildaAutonomous extends LinearOpMode {
 
         lockServo = new SimpleServo(hardwareMap, "Lock", 0, 90, AngleUnit.DEGREES);
 
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        gyro = new RevIMU(hardwareMap, "imu");
 
-        BNO055IMU.Parameters imuParameters;
-
-        // Create new IMU Parameters object.
-        imuParameters = new BNO055IMU.Parameters();
-        // Use degrees as angle unit.
-        imuParameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
-        // Express acceleration as m/s^2.
-        imuParameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        // Disable logging.
-        imuParameters.loggingEnabled = false;
-        // Initialize IMU.
-        imu.initialize(imuParameters);
-
-        chassis = new DriveSubsystem(frontLeftMotor, frontRightMotor, backLeftMotor, backRightMotor, imu);
+        chassis = new DriveSubsystem(frontLeftMotor, frontRightMotor, backLeftMotor, backRightMotor, gyro);
         intake = new IntakeSubsystem(intakeMotor);
         elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo);
 
@@ -145,8 +131,7 @@ public class GoBildaAutonomous extends LinearOpMode {
         // telemetry.addLine("Elevator At Target Level");
         // telemetry.update();
 
-        chassis.translate(.5, .5, false, telemetry);
-        chassis.rotate(90, telemetry);
+        chassis.translate(.5, .5, 90, false, telemetry);
 
         /*
         while (opModeIsActive()) {

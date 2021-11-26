@@ -117,6 +117,7 @@ public class GoBuildaTeleOp extends LinearOpMode {
 
             telemetry.addData("Elevator Motor Current Position", elevatorMotor.getCurrentPosition());
 
+            /*
             if (elevatorMotor.getCurrentPosition() < 2.9 * 1440) {
                 elevatorMotor.set(elevatorPower);
             } else {
@@ -125,9 +126,12 @@ public class GoBuildaTeleOp extends LinearOpMode {
                 } else {
                     elevatorMotor.set(0);
                 }
-            }
+            }*/
+
+            elevatorPower = clamp(elevatorPower, 0.4, -1);
 
             elevatorMotor.set(elevatorPower);
+
 
 
             intakeMotor.set(intakePower);
@@ -169,5 +173,12 @@ public class GoBuildaTeleOp extends LinearOpMode {
 
             telemetry.update();
         }
+    }
+
+    private double clamp(double valueToClamp, double upperBound, double lowerBound){
+        if (valueToClamp < lowerBound) {
+            return lowerBound;
+        }
+        return Math.min(valueToClamp, upperBound);
     }
 }
