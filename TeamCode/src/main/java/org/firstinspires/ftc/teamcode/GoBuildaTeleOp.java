@@ -3,19 +3,12 @@ package org.firstinspires.ftc.teamcode;
 import com.arcrobotics.ftclib.drivebase.MecanumDrive;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
-import com.arcrobotics.ftclib.hardware.ServoEx;
-import com.arcrobotics.ftclib.hardware.SimpleServo;
+import com.arcrobotics.ftclib.hardware.GyroEx;
+import com.arcrobotics.ftclib.hardware.RevIMU;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.arcrobotics.ftclib.hardware.motors.MotorEx;
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.teamcode.Subsystems.ElevatorSubsystem;
-import org.firstinspires.ftc.teamcode.Subsystems.IntakeSubsystem;
 
 @TeleOp(name = "GoBuilda TeleOp")
 public class GoBuildaTeleOp extends LinearOpMode {
@@ -26,24 +19,13 @@ public class GoBuildaTeleOp extends LinearOpMode {
 
     private MotorEx elevatorMotor;
     private MotorEx intakeMotor;
-    private MotorEx angleMotor;
 
-    private ServoEx lockServo;
-
-    private MecanumDrive drive;
+    private GyroEx gyro;
 
     private GamepadEx driverJoystick;
     private GamepadEx operatorJoystick;
 
-    private BNO055IMU imu;
-
-    private IntakeSubsystem intake;
-    private ElevatorSubsystem elevator;
-
-    private boolean elevatorAtTarget;
-    private boolean angleAtTarget;
-
-    private double servoPos = 0;
+    private MecanumDrive drive;
 
     @Override
     public void runOpMode(){
@@ -56,12 +38,11 @@ public class GoBuildaTeleOp extends LinearOpMode {
 
         elevatorMotor = new MotorEx(hardwareMap, "intakeRaise");
         intakeMotor = new MotorEx(hardwareMap, "intakeSpin");
-        angleMotor = new MotorEx(hardwareMap, "Elevator");
 
-        lockServo = new SimpleServo(hardwareMap, "Lock", 0, 90, AngleUnit.DEGREES);
+        gyro = new RevIMU(hardwareMap, "imu");
 
-        intake = new IntakeSubsystem(intakeMotor);
-        elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo);
+        driverJoystick = new GamepadEx(gamepad1);
+        operatorJoystick = new GamepadEx(gamepad2);
 
         frontLeftMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         frontRightMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
@@ -73,33 +54,16 @@ public class GoBuildaTeleOp extends LinearOpMode {
         backLeftMotor.setInverted(true);
         backRightMotor.setInverted(true);
 
+        elevatorMotor.setRunMode(Motor.RunMode.RawPower);
+        intakeMotor.setRunMode(Motor.RunMode.RawPower);
+
+        gyro.init();
+
         drive = new MecanumDrive(frontLeftMotor,frontRightMotor,backLeftMotor,backRightMotor);
-        driverJoystick = new GamepadEx(gamepad1);
-        operatorJoystick = new GamepadEx(gamepad2);
-
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-
-        BNO055IMU.Parameters imuParameters;
-
-        // Create new IMU Parameters object.
-        imuParameters = new BNO055IMU.Parameters();
-        // Use degrees as angle unit.
-        imuParameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
-        // Express acceleration as m/s^2.
-        imuParameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        // Disable logging.
-        imuParameters.loggingEnabled = false;
-        // Initialize IMU.
-        imu.initialize(imuParameters);
-
-        elevator.initialize();
-
-        // lockServo.turnToAngle(90);
 
         waitForStart();
 
         while (opModeIsActive()) {
-
             if (driverJoystick.getButton(GamepadKeys.Button.X)) {
                 powerMultiplier = 0.33;
             } else if (driverJoystick.getButton(GamepadKeys.Button.Y)) {
@@ -108,64 +72,31 @@ public class GoBuildaTeleOp extends LinearOpMode {
                 powerMultiplier = 1;
             }
 
+            if (driverJoystick.getButton(GamepadKeys.Button.START) && driverJoystick.getButton(GamepadKeys.Button.BACK)){
+                gyro.reset();
+            }
+
             double elevatorPower = operatorJoystick.getLeftY();
             double intakePower = operatorJoystick.getRightY();
 
-            drive.driveFieldCentric(driverJoystick.getLeftX() * powerMultiplier, driverJoystick.getLeftY() * powerMultiplier, driverJoystick.getRightX() * powerMultiplier, imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle - 180);
+            drive.driveFieldCentric(
+                    driverJoystick.getLeftX() * powerMultiplier,
+                    driverJoystick.getLeftY() * powerMultiplier,
+                    driverJoystick.getRightX() * powerMultiplier,
+                    gyro.getHeading() - 90);
 
-            // elevatorMotor.set((elevatorMotor.getCurrentPosition() < 2.9 * 1440) ? (elevatorPower) : 0);
-
-            telemetry.addData("Elevator Motor Current Position", elevatorMotor.getCurrentPosition());
-
-            /*
-            if (elevatorMotor.getCurrentPosition() < 2.9 * 1440) {
-                elevatorMotor.set(elevatorPower);
-            } else {
-                if (elevatorPower <= 0) {
-                    elevatorMotor.set(elevatorPower);
-                } else {
-                    elevatorMotor.set(0);
-                }
-            }*/
-
-            elevatorPower = clamp(elevatorPower, 0.4, -1);
+            elevatorPower = Math.min(elevatorPower, 0.4);
 
             elevatorMotor.set(elevatorPower);
 
-
-
             intakeMotor.set(intakePower);
 
-            /*
-            if (operatorJoystick.getButton(GamepadKeys.Button.A)){
-                intake.operate(IntakeSubsystem.Modes.INTAKE);
-
-
-
-                +++++
-            } else if (operatorJoystick.getButton(GamepadKeys.Button.B)){
-                intake.operate(IntakeSubsystem.Modes.OUTTAKE);
-            } else {
-                intake.operate(IntakeSubsystem.Modes.OFF);
-            }*/
-
-            /*
-            if (operatorJoystick.getButton(GamepadKeys.Button.DPAD_UP)) {
-                elevator.goTo(ElevatorSubsystem.Levels.L1);
-            } else if (operatorJoystick.getButton(GamepadKeys.Button.DPAD_RIGHT)) {
-                elevator.goTo(ElevatorSubsystem.Levels.L2);
-            } else if (operatorJoystick.getButton(GamepadKeys.Button.DPAD_DOWN)) {
-                elevator.goTo(ElevatorSubsystem.Levels.L3);
-            } else if (operatorJoystick.getButton(GamepadKeys.Button.X)) {
-                elevator.goTo(ElevatorSubsystem.Levels.INTAKE);
-            } else if (operatorJoystick.getButton(GamepadKeys.Button.Y)) {
-                elevator.goTo(ElevatorSubsystem.Levels.CAROUSEL);
-            }*/
-
+            telemetry.addData("Elevator Motor Current Position", elevatorMotor.getCurrentPosition());
             telemetry.addData("Driver LeftJoyX", driverJoystick.getLeftX());
             telemetry.addData("Driver LeftJoyY", driverJoystick.getLeftY());
             telemetry.addData("Driver RightJoyX", driverJoystick.getRightX());
-            telemetry.addData("Yaw", imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle);
+            telemetry.addData("Absolute Heading", gyro.getAbsoluteHeading());
+            telemetry.addData("Heading", gyro.getHeading());
 
             telemetry.addLine("");
             telemetry.addData("Operator LeftJoyY", elevatorPower);
@@ -173,12 +104,5 @@ public class GoBuildaTeleOp extends LinearOpMode {
 
             telemetry.update();
         }
-    }
-
-    private double clamp(double valueToClamp, double upperBound, double lowerBound){
-        if (valueToClamp < lowerBound) {
-            return lowerBound;
-        }
-        return Math.min(valueToClamp, upperBound);
     }
 }

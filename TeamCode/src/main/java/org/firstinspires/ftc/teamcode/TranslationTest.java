@@ -2,12 +2,16 @@ package org.firstinspires.ftc.teamcode;
 
 import com.arcrobotics.ftclib.hardware.GyroEx;
 import com.arcrobotics.ftclib.hardware.RevIMU;
+import com.arcrobotics.ftclib.hardware.ServoEx;
+import com.arcrobotics.ftclib.hardware.SimpleServo;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.arcrobotics.ftclib.hardware.motors.MotorEx;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Subsystems.DriveSubsystem;
+import org.firstinspires.ftc.teamcode.Subsystems.ElevatorSubsystem;
 
 @Autonomous(name="Translation Test")
 public class TranslationTest extends LinearOpMode {
@@ -16,9 +20,16 @@ public class TranslationTest extends LinearOpMode {
     private MotorEx backLeftMotor;
     private MotorEx backRightMotor;
 
+    private MotorEx elevatorMotor;
+    private MotorEx angleMotor;
+    private MotorEx intakeMotor;
+
+    private ServoEx lockServo;
+
     private GyroEx gyro;
 
     private DriveSubsystem chassis;
+    private ElevatorSubsystem elevator;
 
     @Override
     public void runOpMode(){
@@ -27,13 +38,24 @@ public class TranslationTest extends LinearOpMode {
         backLeftMotor = new MotorEx(hardwareMap, "BL", Motor.GoBILDA.RPM_312);
         backRightMotor = new MotorEx(hardwareMap, "BR", Motor.GoBILDA.RPM_312);
 
+        elevatorMotor = new MotorEx(hardwareMap, "intakeRaise");
+        angleMotor = new MotorEx(hardwareMap, "Elevator");
+        intakeMotor = new MotorEx(hardwareMap, "intakeSpin");
+
+        lockServo = new SimpleServo(hardwareMap, "Lock", 0, 90, AngleUnit.DEGREES);
+
         gyro = new RevIMU(hardwareMap, "imu");
 
         chassis = new DriveSubsystem(frontLeftMotor, frontRightMotor, backLeftMotor, backRightMotor, gyro);
+        elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo);
 
-        chassis.initialize(0, 0, 0);
-
+        chassis.initialize(1, 0.22, 0);
         chassis.setMaxVelocity(0.2);
+        chassis.setTolerance(0.02);
+
+        elevator.initialize();
+
+        intakeMotor.setRunMode(Motor.RunMode.RawPower);
 
         telemetry.addLine("Waiting for start");
 
@@ -41,14 +63,18 @@ public class TranslationTest extends LinearOpMode {
 
         waitForStart();
 
-        chassis.translate(2, -1, 0, true, telemetry);
+        elevator.deploy();
 
         sleep(1000);
 
-        chassis.translate(-1, 3, 0, true, telemetry);
+        elevator.goTo(ElevatorSubsystem.Levels.L1);
 
-        chassis.translate(1, -1, 0, false, telemetry);
+        chassis.translate(1.5, 0.58, 0, true, telemetry);
 
-        //chassis.translate(0, 2, false, telemetry);
+        intakeMotor.set(-1);
+
+        sleep(2000);
+
+        intakeMotor.set(0);
     }
 }

@@ -6,7 +6,6 @@ import com.arcrobotics.ftclib.hardware.ServoEx;
 import com.arcrobotics.ftclib.hardware.SimpleServo;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.arcrobotics.ftclib.hardware.motors.MotorEx;
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
@@ -20,8 +19,8 @@ import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 
-@Autonomous(name="GoBilda Autonomous")
-public class GoBildaAutonomous extends LinearOpMode {
+@Autonomous(name="Auto Test 1a")
+public class AutoTest1 extends LinearOpMode {
     private MotorEx frontLeftMotor;
     private MotorEx frontRightMotor;
     private MotorEx backLeftMotor;
@@ -64,6 +63,9 @@ public class GoBildaAutonomous extends LinearOpMode {
         elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo);
 
         chassis.initialize(1, 0.22, 0);
+        chassis.setMaxVelocity(0.2);
+        chassis.setTolerance(0.02);
+
         elevator.initialize();
 
         // Get webcam object from hardwareMap
@@ -106,40 +108,22 @@ public class GoBildaAutonomous extends LinearOpMode {
 
         webcam.stopStreaming();
 
-        /*
-        ElapsedTime tempTimer = new ElapsedTime();
-        while (tempTimer.time() < 250) {
-            targetLevel = pipeline.getTargetLevel();
-            telemetry.addData("Target Level", targetLevel);
-            telemetry.update();
+        elevator.deploy();
+
+        sleep(1000);
+
+        if (targetLevel == ElevatorSubsystem.Levels.L3){
+            elevator.goTo(ElevatorSubsystem.Levels.L2);
+        } else {
+            elevator.goTo(targetLevel);
         }
-        */
 
-        // targetLevel = pipeline.getTargetLevel();
-        // targetLevel = ElevatorSubsystem.Levels.L2;
-        // telemetry.addData("Target Level", targetLevel);
+        chassis.translate(1.5, 0.58, 0, true, telemetry);
 
-        // elevator.deploy();
+        intakeMotor.set(-1);
 
-        // telemetry.addLine("Deployed.");
-        // telemetry.update();
+        sleep(2000);
 
-        sleep(1500);
-
-        // elevator.goTo(targetLevel);
-
-        // telemetry.addLine("Elevator At Target Level");
-        // telemetry.update();
-
-        chassis.translate(.5, .5, 90, false, telemetry);
-
-        /*
-        while (opModeIsActive()) {
-            telemetry.addData("Target Level", targetLevel);
-            telemetry.addData("Target Motor Position", elevator.levels.get(targetLevel));
-            telemetry.addData("Current Motor Position", elevatorMotor.getCurrentPosition());
-            telemetry.update();
-        }
-        */
+        intakeMotor.set(0);
     }
 }

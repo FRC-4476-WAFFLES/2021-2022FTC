@@ -18,12 +18,9 @@ public class ElevatorSubsystem extends SubsystemBase {
     private ServoEx lockServo;
 
     private final double TICKS_PER_ROTATION = 1440;
-    private final double MM_PER_TICK = (-50 * Math.PI) / TICKS_PER_ROTATION;
+    private final double MM_PER_TICK = (-50 * Math.PI) / (TICKS_PER_ROTATION * 2);
 
     public final Hashtable<Levels, Integer> levels;
-
-    private boolean deploy = false;
-    private boolean deployed = false;
 
     public ElevatorSubsystem(MotorEx elevatorMotor, MotorEx angleMotor, ServoEx lockServo){
         this.elevatorMotor = elevatorMotor;
@@ -33,9 +30,9 @@ public class ElevatorSubsystem extends SubsystemBase {
 
         levels.put(Levels.INTAKE, 0);
         levels.put(Levels.CAROUSEL, (int) (330/MM_PER_TICK));
-        levels.put(Levels.L1, (int) (150/MM_PER_TICK));
-        levels.put(Levels.L2, (int) (280/MM_PER_TICK));
-        levels.put(Levels.L3, (int) (320/MM_PER_TICK));
+        levels.put(Levels.L1, (int) (100 / MM_PER_TICK));
+        levels.put(Levels.L2, (int) (230 / MM_PER_TICK));
+        levels.put(Levels.L3, (int) (370 / MM_PER_TICK));
     }
 
     public void initialize(){
@@ -57,17 +54,55 @@ public class ElevatorSubsystem extends SubsystemBase {
     }
 
     public void deploy(){
-        goToRawPosition((int) (1440 * 2), 0.6);
+        angleMotor.resetEncoder();
+        elevatorMotor.resetEncoder();
+
+        elevatorMotor.setTargetPosition(1440);
+
+        while (!elevatorMotor.atTargetPosition()) elevatorMotor.set(0.6);
 
         angleMotor.setTargetPosition((int) (1440 * -0.375));
-        while (!angleMotor.atTargetPosition()) angleMotor.set(0.6);
-        angleMotor.set(0);
+        elevatorMotor.setTargetPosition((int) (1440 * 3.5));
+
+        boolean angleComplete = false;
+        boolean elevatorComplete = false;
+
+        do {
+            if (angleMotor.atTargetPosition()) {
+                angleMotor.set(0);
+                angleComplete = true;
+            } else {
+                angleMotor.set(0.6);
+            }
+
+            if (elevatorMotor.atTargetPosition()) {
+                elevatorMotor.set(0);
+                elevatorComplete = true;
+            } else {
+                elevatorMotor.set(1);
+            }
+
+        } while (!elevatorComplete && !angleComplete);
+
+        angleMotor.disable();
+        elevatorMotor.set(0);
 
         ElapsedTime timer = new ElapsedTime();
         timer.reset();
-        while (timer.time() < 0.250) { }
+        while (timer.time() < 1.5) { }
 
         lockServo.turnToAngle(90, AngleUnit.DEGREES);
+
+        timer.reset();
+        while (timer.time() < 1) { }
+
+        elevatorMotor.resetEncoder();
+
+        elevatorMotor.setTargetPosition(1522);
+
+        while (!elevatorMotor.atTargetPosition()) elevatorMotor.set(0.6);
+
+        elevatorMotor.set(0);
 
         elevatorMotor.resetEncoder();
     }

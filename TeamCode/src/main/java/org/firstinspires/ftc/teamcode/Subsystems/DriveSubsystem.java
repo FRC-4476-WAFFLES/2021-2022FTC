@@ -29,7 +29,7 @@ public class DriveSubsystem extends SubsystemBase {
 
     private final double CPR = 2150.8; // Encoder ticks per wheel rotation
     private final double WHEEL_DIAMETER = 101.6; // Wheel diameter in millimeters
-    private final double MM_PER_TICK = (WHEEL_DIAMETER * 3.141592 / CPR) * 3; // Wheel distance traveled per encoder tick in millimeters
+    private final double MM_PER_TICK = (WHEEL_DIAMETER * 3.141592 / CPR) * 2; // Wheel distance traveled per encoder tick in millimeters
     private final double METERS_TO_TICKS = (1 / MM_PER_TICK) * 1000; // Convert meters per second to ticks per second
 
     // Create the objects needed for odometry and kinematics
@@ -129,6 +129,12 @@ public class DriveSubsystem extends SubsystemBase {
 
     public void setMaxVelocity(double translate){
         vMax = translate;
+    }
+
+    public void setTolerance(double tolerance){
+        pxTol = tolerance;
+        pyTol = tolerance;
+        phTol = tolerance;
     }
 
     public void translate(double x, double y, double h, boolean fieldRelative, Telemetry telemetry){
