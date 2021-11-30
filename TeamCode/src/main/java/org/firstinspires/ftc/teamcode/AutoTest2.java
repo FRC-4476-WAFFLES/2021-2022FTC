@@ -19,8 +19,8 @@ import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 
-@Autonomous(name="Auto Test 1")
-public class AutoTest1 extends LinearOpMode {
+@Autonomous(name="Auto Test 2")
+public class AutoTest2 extends LinearOpMode {
     private MotorEx frontLeftMotor;
     private MotorEx frontRightMotor;
     private MotorEx backLeftMotor;
@@ -110,7 +110,7 @@ public class AutoTest1 extends LinearOpMode {
 
         elevator.deploy();
 
-        sleep(1000);
+        sleep(500);
 
         if (targetLevel == ElevatorSubsystem.Levels.L3){
             elevator.goTo(ElevatorSubsystem.Levels.L2);
@@ -122,8 +122,22 @@ public class AutoTest1 extends LinearOpMode {
 
         intakeMotor.set(-1);
 
-        sleep(2000);
+        sleep(800);
 
         intakeMotor.set(0);
+
+        elevator.goTo(ElevatorSubsystem.Levels.CAROUSEL);
+
+        chassis.setTolerance(0.01);
+
+        chassis.translate(0.5, 0.24, 90, 8);
+
+        intakeMotor.set(-1);
+
+        sleep(4000);
+
+        intakeMotor.set(0);
+
+        chassis.translate(0.52, 0.8, 90, true, telemetry);
     }
 }

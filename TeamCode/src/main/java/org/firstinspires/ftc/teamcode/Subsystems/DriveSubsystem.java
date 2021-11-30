@@ -211,6 +211,67 @@ public class DriveSubsystem extends SubsystemBase {
         stop();
     }
 
+    public void translate(double x, double y, double h, double maxTime){
+        ElapsedTime timer = new ElapsedTime();
+        timer.reset();
+
+        updateOdometry();
+
+        Rotation2d heading = getHeadingAsRotation2d();
+
+        final Pose2d destination = new Pose2d(x, y, Rotation2d.fromDegrees(h));
+
+        while (true){
+            double vxMultiplier;
+            double vyMultiplier;
+            double vhMultiplier;
+
+            updateOdometry();
+
+            heading = getHeadingAsRotation2d();
+
+            ChassisSpeeds speeds;
+
+            if (Math.abs(odometry.getPoseMeters().getX() - destination.getX()) < pxTol){
+                vxMultiplier = 0;
+            } else if (odometry.getPoseMeters().getX() < destination.getX()){
+                vxMultiplier = 1;
+            } else {
+                vxMultiplier = -1;
+            }
+
+            if (Math.abs(odometry.getPoseMeters().getY() - destination.getY()) < pyTol){
+                vyMultiplier = 0;
+            } else if (odometry.getPoseMeters().getY() < destination.getY()){
+                vyMultiplier = 1;
+            } else {
+                vyMultiplier = -1;
+            }
+
+            if (Math.abs(heading.getRadians() - destination.getHeading()) < phTol){
+                vhMultiplier = 0;
+            } else if (heading.getRadians() < destination.getHeading()){
+                vhMultiplier = 1;
+            } else {
+                vhMultiplier = -1;
+            }
+
+            if (vxMultiplier == 0 && vyMultiplier == 0 && vhMultiplier == 0){
+                break;
+            }
+
+            if (timer.time() > maxTime){
+                break;
+            }
+
+            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vxMultiplier * vMax, vyMultiplier * vMax, vhMultiplier * vMax, heading);
+
+            setMotors(kinematics.toWheelSpeeds(speeds));
+        }
+
+        stop();
+    }
+
     public void stop(){
         frontLeftMotor.setVelocity(0);
         frontRightMotor.setVelocity(0);

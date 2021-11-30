@@ -29,7 +29,7 @@ public class ElevatorSubsystem extends SubsystemBase {
         this.levels = new Hashtable<>();
 
         levels.put(Levels.INTAKE, 0);
-        levels.put(Levels.CAROUSEL, (int) (330/MM_PER_TICK));
+        levels.put(Levels.CAROUSEL, (int) (280 / MM_PER_TICK));
         levels.put(Levels.L1, (int) (100 / MM_PER_TICK));
         levels.put(Levels.L2, (int) (230 / MM_PER_TICK));
         levels.put(Levels.L3, (int) (370 / MM_PER_TICK));
@@ -89,12 +89,12 @@ public class ElevatorSubsystem extends SubsystemBase {
 
         ElapsedTime timer = new ElapsedTime();
         timer.reset();
-        while (timer.time() < 1.5) { }
+        while (timer.time() < 0.75) { }
 
         lockServo.turnToAngle(90, AngleUnit.DEGREES);
 
         timer.reset();
-        while (timer.time() < 1) { }
+        while (timer.time() < 0.5) { }
 
         elevatorMotor.resetEncoder();
 

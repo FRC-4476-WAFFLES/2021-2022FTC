@@ -13,7 +13,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.Subsystems.ElevatorSubsystem;
 
-@Autonomous(name="Translation Test")
+@Autonomous(name="Translation Test1")
 public class TranslationTest extends LinearOpMode {
     private MotorEx frontLeftMotor;
     private MotorEx frontRightMotor;
@@ -50,7 +50,7 @@ public class TranslationTest extends LinearOpMode {
         elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo);
 
         chassis.initialize(1, 0.22, 0);
-        chassis.setMaxVelocity(0.2);
+        chassis.setMaxVelocity(0.4);
         chassis.setTolerance(0.02);
 
         elevator.initialize();
@@ -63,18 +63,18 @@ public class TranslationTest extends LinearOpMode {
 
         waitForStart();
 
-        elevator.deploy();
+        elevator.goTo(ElevatorSubsystem.Levels.CAROUSEL);
 
-        sleep(1000);
-
-        elevator.goTo(ElevatorSubsystem.Levels.L1);
-
-        chassis.translate(1.5, 0.58, 0, true, telemetry);
+        chassis.translate(0.5, 0.3, 90, true, telemetry);
 
         intakeMotor.set(-1);
 
-        sleep(2000);
+        sleep(4000);
 
         intakeMotor.set(0);
+
+        chassis.setTolerance(0.01);
+
+        chassis.translate(0.45, 0.8, 90, true, telemetry);
     }
 }
