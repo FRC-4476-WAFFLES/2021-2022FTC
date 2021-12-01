@@ -89,7 +89,7 @@ public class GoBuildaTeleOp extends LinearOpMode {
 
             elevatorMotor.set(elevatorPower);
 
-            intakeMotor.set(intakePower);
+            intakeMotor.set(-intakePower);
 
             telemetry.addData("Elevator Motor Current Position", elevatorMotor.getCurrentPosition());
             telemetry.addData("Driver LeftJoyX", driverJoystick.getLeftX());

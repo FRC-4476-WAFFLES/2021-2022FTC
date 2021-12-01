@@ -112,10 +112,10 @@ public class AutoTest2 extends LinearOpMode {
 
         sleep(500);
 
-        if (targetLevel == ElevatorSubsystem.Levels.L3){
-            elevator.goTo(ElevatorSubsystem.Levels.L2);
+        if (targetLevel == ElevatorSubsystem.Levels.L1){
+            elevator.goTo(ElevatorSubsystem.Levels.L1);
         } else {
-            elevator.goTo(targetLevel);
+            elevator.goTo(ElevatorSubsystem.Levels.L2);
         }
 
         chassis.translate(1.5, 0.58, 0, true, telemetry);
@@ -130,7 +130,7 @@ public class AutoTest2 extends LinearOpMode {
 
         chassis.setTolerance(0.01);
 
-        chassis.translate(0.5, 0.24, 90, 8);
+        chassis.translate(0.52, 0.24, 90, 8);
 
         intakeMotor.set(-1);
 

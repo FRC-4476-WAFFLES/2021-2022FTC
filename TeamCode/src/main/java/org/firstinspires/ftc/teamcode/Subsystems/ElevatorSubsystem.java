@@ -22,6 +22,8 @@ public class ElevatorSubsystem extends SubsystemBase {
 
     public final Hashtable<Levels, Integer> levels;
 
+    private int offset = 0;
+
     public ElevatorSubsystem(MotorEx elevatorMotor, MotorEx angleMotor, ServoEx lockServo){
         this.elevatorMotor = elevatorMotor;
         this.angleMotor = angleMotor;
@@ -48,7 +50,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     }
 
     public void goToRawPosition(int target, double power){
-        elevatorMotor.setTargetPosition(target);
+        elevatorMotor.setTargetPosition(target + offset);
         while (!elevatorMotor.atTargetPosition()) elevatorMotor.set(power);
         elevatorMotor.set(0);
     }
@@ -96,13 +98,7 @@ public class ElevatorSubsystem extends SubsystemBase {
         timer.reset();
         while (timer.time() < 0.5) { }
 
-        elevatorMotor.resetEncoder();
-
-        elevatorMotor.setTargetPosition(1522);
-
-        while (!elevatorMotor.atTargetPosition()) elevatorMotor.set(0.6);
-
-        elevatorMotor.set(0);
+        offset = 1522;
 
         elevatorMotor.resetEncoder();
     }
