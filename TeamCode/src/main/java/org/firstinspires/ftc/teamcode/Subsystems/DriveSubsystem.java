@@ -1,8 +1,11 @@
 package org.firstinspires.ftc.teamcode.Subsystems;
 
+import androidx.annotation.NonNull;
+
 import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.arcrobotics.ftclib.geometry.Pose2d;
 import com.arcrobotics.ftclib.geometry.Rotation2d;
+import com.arcrobotics.ftclib.geometry.Transform2d;
 import com.arcrobotics.ftclib.geometry.Translation2d;
 import com.arcrobotics.ftclib.hardware.GyroEx;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
@@ -15,6 +18,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.NavigationWaypoint;
+import org.jetbrains.annotations.Contract;
 
 public class DriveSubsystem extends SubsystemBase {
     private final ElapsedTime runtime = new ElapsedTime();
@@ -46,6 +50,7 @@ public class DriveSubsystem extends SubsystemBase {
 
     // Set the default maximum chassis speeds in meters per second
     private double vMax = 1;
+    private double hMax = 1;
 
     // Set the default navigation tolerances in meters and radians
     private double pxTol = 0.05;
@@ -127,8 +132,9 @@ public class DriveSubsystem extends SubsystemBase {
      * @param translate The max speed of the robot, in meters per second
      */
 
-    public void setMaxVelocity(double translate){
+    public void setMaxVelocity(double translate, double rotate){
         vMax = translate;
+        hMax = rotate;
     }
 
     public void setTolerance(double tolerance){
@@ -137,18 +143,16 @@ public class DriveSubsystem extends SubsystemBase {
         phTol = tolerance;
     }
 
-    public void translate(double x, double y, double h, boolean fieldRelative, Telemetry telemetry){
+    public void translate(double x, double y, double h){
         updateOdometry();
 
         Rotation2d heading = getHeadingAsRotation2d();
 
-        final Pose2d destination;
-
-        if (fieldRelative) {
-            destination = new Pose2d(x, y, Rotation2d.fromDegrees(h));
-        } else {
-            destination = new Pose2d(x + odometry.getPoseMeters().getX(), y + odometry.getPoseMeters().getY(), heading.plus(Rotation2d.fromDegrees(h)));
-        }
+        final Pose2d destination = new Pose2d(x, y, Rotation2d.fromDegrees(h));
+        
+        Translation2d translationDistances = odometry.getPoseMeters().minus(destination).getTranslation();
+        
+        double rotationDistance = heading.minus(Rotation2d.fromDegrees(h)).getRadians();
 
         while (true){
             double vxMultiplier;
@@ -159,23 +163,48 @@ public class DriveSubsystem extends SubsystemBase {
 
             heading = getHeadingAsRotation2d();
 
-            ChassisSpeeds speeds;
+            translationDistances = odometry.getPoseMeters().minus(destination).getTranslation();
 
-            if (Math.abs(odometry.getPoseMeters().getX() - destination.getX()) < pxTol){
-                vxMultiplier = 0;
-            } else if (odometry.getPoseMeters().getX() < destination.getX()){
+            rotationDistance = heading.minus(Rotation2d.fromDegrees(h)).getRadians();
+
+            ChassisSpeeds speeds;
+            
+            if (translationDistances.getX() < -3 * pxTol){
                 vxMultiplier = 1;
+            } else if (translationDistances.getX() < -pxTol){
+                vxMultiplier = 0.5;
+            } else if (translationDistances.getX() < pxTol){
+                vxMultiplier = 0;
+            } else if (translationDistances.getX() < 3 * pxTol){
+                vxMultiplier = -0.5;
             } else {
                 vxMultiplier = -1;
             }
 
-            if (Math.abs(odometry.getPoseMeters().getY() - destination.getY()) < pyTol){
-                vyMultiplier = 0;
-            } else if (odometry.getPoseMeters().getY() < destination.getY()){
+            if (translationDistances.getY() < -3 * pyTol){
                 vyMultiplier = 1;
+            } else if (translationDistances.getY() < -pyTol){
+                vyMultiplier = 0.5;
+            } else if (translationDistances.getY() < pyTol){
+                vyMultiplier = 0;
+            } else if (translationDistances.getY() < 3 * pyTol){
+                vyMultiplier = -0.5;
             } else {
                 vyMultiplier = -1;
             }
+
+            /*
+            if (rotationDistance < -3 * phTol){
+                vhMultiplier = -1;
+            } else if (rotationDistance < -phTol){
+                vhMultiplier = -0.5;
+            } else if (rotationDistance < phTol){
+                vhMultiplier = 0;
+            } else if (rotationDistance < 3 * phTol){
+                vhMultiplier = 0.5;
+            } else {
+                vhMultiplier = 1;
+            }*/
 
             if (Math.abs(heading.getRadians() - destination.getHeading()) < phTol){
                 vhMultiplier = 0;
@@ -189,23 +218,9 @@ public class DriveSubsystem extends SubsystemBase {
                 break;
             }
 
-            if (fieldRelative){
-                speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vxMultiplier * vMax, vyMultiplier * vMax, vhMultiplier * vMax, heading);
-            } else {
-                speeds = new ChassisSpeeds(vxMultiplier * vMax, vyMultiplier * vMax, vhMultiplier * vMax);
-            }
+            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vxMultiplier * vMax, vyMultiplier * vMax, vhMultiplier * hMax, heading);
 
             setMotors(kinematics.toWheelSpeeds(speeds));
-
-            telemetry.addData("Field Relative", fieldRelative);
-            telemetry.addData("Location", odometry.getPoseMeters());
-            telemetry.addLine();
-            telemetry.addData("Destination", destination);
-            telemetry.addLine();
-            telemetry.addData("x Multiplier", vxMultiplier);
-            telemetry.addData("y Multiplier", vyMultiplier);
-            telemetry.addData("h Multiplier", vhMultiplier);
-            telemetry.update();
         }
 
         stop();
@@ -264,7 +279,7 @@ public class DriveSubsystem extends SubsystemBase {
                 break;
             }
 
-            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vxMultiplier * vMax, vyMultiplier * vMax, vhMultiplier * vMax, heading);
+            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vxMultiplier * vMax, vyMultiplier * vMax, vhMultiplier * hMax, heading);
 
             setMotors(kinematics.toWheelSpeeds(speeds));
         }
@@ -293,7 +308,7 @@ public class DriveSubsystem extends SubsystemBase {
                 backLeftMotor.getVelocity() / METERS_TO_TICKS,
                 backRightMotor.getVelocity() / METERS_TO_TICKS));
     }
-
+    
     private Rotation2d getHeadingAsRotation2d(){
         return Rotation2d.fromDegrees(getHeading());
     }
@@ -308,7 +323,7 @@ public class DriveSubsystem extends SubsystemBase {
         return heading;
     }
 
-    private void setMotors(MecanumDriveWheelSpeeds wheelSpeeds){
+    private void setMotors(@NonNull MecanumDriveWheelSpeeds wheelSpeeds){
         frontLeftMotor.setVelocity(wheelSpeeds.frontLeftMetersPerSecond * METERS_TO_TICKS);
         frontRightMotor.setVelocity(wheelSpeeds.frontRightMetersPerSecond * METERS_TO_TICKS);
         backLeftMotor.setVelocity(wheelSpeeds.rearLeftMetersPerSecond * METERS_TO_TICKS);

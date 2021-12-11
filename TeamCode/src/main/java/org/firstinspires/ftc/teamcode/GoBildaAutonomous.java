@@ -9,6 +9,7 @@ import com.arcrobotics.ftclib.hardware.motors.MotorEx;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -35,6 +36,8 @@ public class GoBildaAutonomous extends LinearOpMode {
 
     private GyroEx gyro;
 
+    private DigitalChannel elevatorLimit;
+
     private IntakeSubsystem intake;
     private ElevatorSubsystem elevator;
     private DriveSubsystem chassis;
@@ -59,9 +62,11 @@ public class GoBildaAutonomous extends LinearOpMode {
 
         gyro = new RevIMU(hardwareMap, "imu");
 
+        elevatorLimit = hardwareMap.get(DigitalChannel.class, "intakeRaiseLimit");
+
         chassis = new DriveSubsystem(frontLeftMotor, frontRightMotor, backLeftMotor, backRightMotor, gyro);
         intake = new IntakeSubsystem(intakeMotor);
-        elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo);
+        elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo, elevatorLimit);
 
         chassis.initialize(1, 0.22, 0);
         elevator.initialize();
@@ -131,7 +136,7 @@ public class GoBildaAutonomous extends LinearOpMode {
         // telemetry.addLine("Elevator At Target Level");
         // telemetry.update();
 
-        chassis.translate(.5, .5, 90, false, telemetry);
+        chassis.translate(.5, .5, 90);
 
         /*
         while (opModeIsActive()) {

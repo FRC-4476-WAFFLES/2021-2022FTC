@@ -8,6 +8,7 @@ import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.arcrobotics.ftclib.hardware.motors.MotorEx;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -34,6 +35,8 @@ public class AutoTest2 extends LinearOpMode {
 
     private GyroEx gyro;
 
+    private DigitalChannel elevatorLimit;
+
     private IntakeSubsystem intake;
     private ElevatorSubsystem elevator;
     private DriveSubsystem chassis;
@@ -58,12 +61,14 @@ public class AutoTest2 extends LinearOpMode {
 
         gyro = new RevIMU(hardwareMap, "imu");
 
+        elevatorLimit = hardwareMap.get(DigitalChannel.class, "intakeRaiseLimit");
+
         chassis = new DriveSubsystem(frontLeftMotor, frontRightMotor, backLeftMotor, backRightMotor, gyro);
         intake = new IntakeSubsystem(intakeMotor);
-        elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo);
+        elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo, elevatorLimit);
 
         chassis.initialize(1, 0.22, 0);
-        chassis.setMaxVelocity(0.2);
+        chassis.setMaxVelocity(0.4, 0.4);
         chassis.setTolerance(0.02);
 
         elevator.initialize();
@@ -112,13 +117,13 @@ public class AutoTest2 extends LinearOpMode {
 
         sleep(500);
 
-        if (targetLevel == ElevatorSubsystem.Levels.L1){
-            elevator.goTo(ElevatorSubsystem.Levels.L1);
-        } else {
-            elevator.goTo(ElevatorSubsystem.Levels.L2);
+        if (targetLevel == ElevatorSubsystem.Levels.CONSTANT){
+            targetLevel = ElevatorSubsystem.Levels.L2;
         }
 
-        chassis.translate(1.5, 0.58, 0, true, telemetry);
+        elevator.goTo(targetLevel);
+
+        chassis.translate(1.5, 0.58, 0);
 
         intakeMotor.set(-1);
 
@@ -129,8 +134,7 @@ public class AutoTest2 extends LinearOpMode {
         elevator.goTo(ElevatorSubsystem.Levels.CAROUSEL);
 
         chassis.setTolerance(0.01);
-
-        chassis.translate(0.52, 0.24, 90, 8);
+        chassis.translate(0.52, 0.24, 90, 4);
 
         intakeMotor.set(-1);
 
@@ -138,6 +142,11 @@ public class AutoTest2 extends LinearOpMode {
 
         intakeMotor.set(0);
 
-        chassis.translate(0.52, 0.8, 90, true, telemetry);
+        chassis.setMaxVelocity(0.4, 0.6);
+        chassis.translate(1.5, 0.24, -90,5);
+        chassis.setMaxVelocity(0.4, 0.4);
+        chassis.translate(2, 0.15, -90, 2);
+        elevator.goTo(ElevatorSubsystem.Levels.INTAKE);
+        chassis.translate(3, 0.15, -90, 2);
     }
 }

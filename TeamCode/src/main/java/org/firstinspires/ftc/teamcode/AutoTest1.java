@@ -8,6 +8,7 @@ import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.arcrobotics.ftclib.hardware.motors.MotorEx;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -19,7 +20,7 @@ import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 
-@Autonomous(name="Auto Test 1")
+@Autonomous(name="Deploy Test")
 public class AutoTest1 extends LinearOpMode {
     private MotorEx frontLeftMotor;
     private MotorEx frontRightMotor;
@@ -33,6 +34,8 @@ public class AutoTest1 extends LinearOpMode {
     private ServoEx lockServo;
 
     private GyroEx gyro;
+
+    private DigitalChannel elevatorLimit;
 
     private IntakeSubsystem intake;
     private ElevatorSubsystem elevator;
@@ -58,15 +61,19 @@ public class AutoTest1 extends LinearOpMode {
 
         gyro = new RevIMU(hardwareMap, "imu");
 
+        elevatorLimit = hardwareMap.get(DigitalChannel.class, "intakeRaiseLimit");
+
         chassis = new DriveSubsystem(frontLeftMotor, frontRightMotor, backLeftMotor, backRightMotor, gyro);
         intake = new IntakeSubsystem(intakeMotor);
-        elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo);
+        elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo, elevatorLimit);
 
         chassis.initialize(1, 0.22, 0);
-        chassis.setMaxVelocity(0.2);
+        chassis.setMaxVelocity(0.2, 0.2);
         chassis.setTolerance(0.02);
 
         elevator.initialize();
+
+        /*
 
         // Get webcam object from hardwareMap
         cameraMonitorViewId = hardwareMap.appContext
@@ -118,12 +125,16 @@ public class AutoTest1 extends LinearOpMode {
             elevator.goTo(targetLevel);
         }
 
-        chassis.translate(1.5, 0.58, 0, true, telemetry);
+        chassis.translate(1.5, 0.58, 0);
 
         intakeMotor.set(-1);
 
         sleep(2000);
 
-        intakeMotor.set(0);
+        intakeMotor.set(0);*/
+
+        waitForStart();
+
+        //elevator.deploy();
     }
 }

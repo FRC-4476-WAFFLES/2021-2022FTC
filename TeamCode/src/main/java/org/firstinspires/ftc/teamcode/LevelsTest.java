@@ -1,29 +1,32 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.arcrobotics.ftclib.gamepad.GamepadEx;
+import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.arcrobotics.ftclib.hardware.GyroEx;
 import com.arcrobotics.ftclib.hardware.RevIMU;
 import com.arcrobotics.ftclib.hardware.ServoEx;
 import com.arcrobotics.ftclib.hardware.SimpleServo;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.arcrobotics.ftclib.hardware.motors.MotorEx;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Subsystems.DriveSubsystem;
 import org.firstinspires.ftc.teamcode.Subsystems.ElevatorSubsystem;
+import org.firstinspires.ftc.teamcode.Subsystems.IntakeSubsystem;
 
-@Autonomous(name="Translation Test")
-public class TranslationTest extends LinearOpMode {
+@TeleOp(name="Levels test")
+public class LevelsTest extends LinearOpMode {
     private MotorEx frontLeftMotor;
     private MotorEx frontRightMotor;
     private MotorEx backLeftMotor;
     private MotorEx backRightMotor;
 
     private MotorEx elevatorMotor;
-    private MotorEx angleMotor;
     private MotorEx intakeMotor;
+    private MotorEx angleMotor;
 
     private ServoEx lockServo;
 
@@ -31,19 +34,24 @@ public class TranslationTest extends LinearOpMode {
 
     private DigitalChannel elevatorLimit;
 
-    private DriveSubsystem chassis;
+    private IntakeSubsystem intake;
     private ElevatorSubsystem elevator;
+    private DriveSubsystem chassis;
+
+    private GamepadEx operatorJoystick;
+
+    ElevatorSubsystem.Levels targetLevel;
 
     @Override
-    public void runOpMode(){
+    public void runOpMode() {
         frontLeftMotor = new MotorEx(hardwareMap, "FL", Motor.GoBILDA.RPM_312);
         frontRightMotor = new MotorEx(hardwareMap, "FR", Motor.GoBILDA.RPM_312);
         backLeftMotor = new MotorEx(hardwareMap, "BL", Motor.GoBILDA.RPM_312);
         backRightMotor = new MotorEx(hardwareMap, "BR", Motor.GoBILDA.RPM_312);
 
         elevatorMotor = new MotorEx(hardwareMap, "intakeRaise");
-        angleMotor = new MotorEx(hardwareMap, "Elevator");
         intakeMotor = new MotorEx(hardwareMap, "intakeSpin");
+        angleMotor = new MotorEx(hardwareMap, "Elevator");
 
         lockServo = new SimpleServo(hardwareMap, "Lock", 0, 90, AngleUnit.DEGREES);
 
@@ -51,49 +59,32 @@ public class TranslationTest extends LinearOpMode {
 
         elevatorLimit = hardwareMap.get(DigitalChannel.class, "intakeRaiseLimit");
 
+        operatorJoystick = new GamepadEx(gamepad2);
+
         chassis = new DriveSubsystem(frontLeftMotor, frontRightMotor, backLeftMotor, backRightMotor, gyro);
+        intake = new IntakeSubsystem(intakeMotor);
         elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo, elevatorLimit);
 
         chassis.initialize(1, 0.22, 0);
-        chassis.setMaxVelocity(0.4,0.4);
+        chassis.setMaxVelocity(0.2, 0.2);
         chassis.setTolerance(0.02);
 
         elevator.initialize();
 
-        intakeMotor.setRunMode(Motor.RunMode.RawPower);
-
-        telemetry.addLine("Waiting for start");
-        telemetry.update();
-
         waitForStart();
 
-        elevator.goTo(ElevatorSubsystem.Levels.L3);
-
-        chassis.translate(1.5, 0.58, 0);
-
-        intakeMotor.set(-1);
-
-        sleep(800);
-
-        intakeMotor.set(0);
-
-        elevator.goTo(ElevatorSubsystem.Levels.CAROUSEL);
-
-        chassis.setTolerance(0.01);
-        chassis.translate(0.52, 0.24, 90, 4);
-
-        intakeMotor.set(-1);
-
-        sleep(4000);
-
-        intakeMotor.set(0);
-
-        chassis.setMaxVelocity(0.4, 0.6);
-        chassis.translate(1.5, 0.24, -90,5);
-        chassis.setMaxVelocity(0.4, 0.4);
-        chassis.translate(2, 0.15, -90, 2);
-        chassis.translate(3, 0.15, -90, 2);
-
-        elevator.goTo(ElevatorSubsystem.Levels.L1);
+        while (opModeIsActive()){
+            if (operatorJoystick.getButton(GamepadKeys.Button.A)){
+                elevator.goTo(ElevatorSubsystem.Levels.INTAKE);
+            } else if (operatorJoystick.getButton(GamepadKeys.Button.B)){
+                elevator.goTo(ElevatorSubsystem.Levels.L1);
+            } else if (operatorJoystick.getButton(GamepadKeys.Button.X)){
+                elevator.goTo(ElevatorSubsystem.Levels.L2);
+            } else if (operatorJoystick.getButton(GamepadKeys.Button.Y)){
+                elevator.goTo(ElevatorSubsystem.Levels.CAROUSEL);
+            } else if (operatorJoystick.getButton(GamepadKeys.Button.RIGHT_BUMPER)){
+                elevator.goTo(ElevatorSubsystem.Levels.L3);
+            }
+        }
     }
 }

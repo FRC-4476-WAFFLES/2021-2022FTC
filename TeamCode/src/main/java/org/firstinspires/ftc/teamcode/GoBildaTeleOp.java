@@ -5,27 +5,43 @@ import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
 import com.arcrobotics.ftclib.hardware.GyroEx;
 import com.arcrobotics.ftclib.hardware.RevIMU;
+import com.arcrobotics.ftclib.hardware.ServoEx;
+import com.arcrobotics.ftclib.hardware.SimpleServo;
 import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.arcrobotics.ftclib.hardware.motors.MotorEx;
+import com.qualcomm.hardware.rev.RevTouchSensor;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
+import com.qualcomm.robotcore.hardware.DigitalChannelController;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 
-@TeleOp(name = "GoBuilda TeleOp")
-public class GoBuildaTeleOp extends LinearOpMode {
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.Subsystems.ElevatorSubsystem;
+
+@TeleOp(name = "GoBilda TeleOp")
+public class GoBildaTeleOp extends LinearOpMode {
     private MotorEx frontLeftMotor;
     private MotorEx frontRightMotor;
     private MotorEx backLeftMotor;
     private MotorEx backRightMotor;
 
     private MotorEx elevatorMotor;
+    private MotorEx angleMotor;
     private MotorEx intakeMotor;
 
+    private ServoEx lockServo;
+
     private GyroEx gyro;
+
+    private DigitalChannel elevatorLimit;
 
     private GamepadEx driverJoystick;
     private GamepadEx operatorJoystick;
 
     private MecanumDrive drive;
+
+    private ElevatorSubsystem elevator;
 
     @Override
     public void runOpMode(){
@@ -38,11 +54,18 @@ public class GoBuildaTeleOp extends LinearOpMode {
 
         elevatorMotor = new MotorEx(hardwareMap, "intakeRaise");
         intakeMotor = new MotorEx(hardwareMap, "intakeSpin");
+        angleMotor = new MotorEx(hardwareMap, "Elevator");
+
+        lockServo = new SimpleServo(hardwareMap, "Lock", 0, 90, AngleUnit.DEGREES);
 
         gyro = new RevIMU(hardwareMap, "imu");
 
+        elevatorLimit = hardwareMap.get(DigitalChannel.class, "intakeRaiseLimit");
+
         driverJoystick = new GamepadEx(gamepad1);
         operatorJoystick = new GamepadEx(gamepad2);
+
+        elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo, elevatorLimit);
 
         frontLeftMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         frontRightMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
@@ -54,12 +77,13 @@ public class GoBuildaTeleOp extends LinearOpMode {
         backLeftMotor.setInverted(true);
         backRightMotor.setInverted(true);
 
-        elevatorMotor.setRunMode(Motor.RunMode.RawPower);
         intakeMotor.setRunMode(Motor.RunMode.RawPower);
 
         gyro.init();
 
         drive = new MecanumDrive(frontLeftMotor,frontRightMotor,backLeftMotor,backRightMotor);
+
+        elevator.initialize();
 
         waitForStart();
 
@@ -76,20 +100,31 @@ public class GoBuildaTeleOp extends LinearOpMode {
                 gyro.reset();
             }
 
-            double elevatorPower = operatorJoystick.getLeftY();
+            if (operatorJoystick.getButton(GamepadKeys.Button.A)){
+                elevator.goToTeleOp(ElevatorSubsystem.Levels.INTAKE);
+            } else if (operatorJoystick.getButton(GamepadKeys.Button.B)){
+                elevator.goToTeleOp(ElevatorSubsystem.Levels.L1);
+            } else if (operatorJoystick.getButton(GamepadKeys.Button.X)){
+                elevator.goToTeleOp(ElevatorSubsystem.Levels.L2);
+            } else if (operatorJoystick.getButton(GamepadKeys.Button.Y)){
+                elevator.goToTeleOp(ElevatorSubsystem.Levels.CAROUSEL);
+            } else if (operatorJoystick.getButton(GamepadKeys.Button.RIGHT_BUMPER)){
+                elevator.goToTeleOp(ElevatorSubsystem.Levels.L3);
+            }
+
+            elevator.update();
+
             double intakePower = operatorJoystick.getRightY();
 
             drive.driveFieldCentric(
                     driverJoystick.getLeftX() * powerMultiplier,
                     driverJoystick.getLeftY() * powerMultiplier,
                     driverJoystick.getRightX() * powerMultiplier,
-                    gyro.getHeading() - 90);
-
-            elevatorPower = Math.min(elevatorPower, 0.4);
-
-            elevatorMotor.set(elevatorPower);
+                    gyro.getHeading() + 180);
 
             intakeMotor.set(-intakePower);
+
+            telemetry.addData("Limit Switch State", elevatorLimit.getState());
 
             telemetry.addData("Elevator Motor Current Position", elevatorMotor.getCurrentPosition());
             telemetry.addData("Driver LeftJoyX", driverJoystick.getLeftX());
@@ -99,7 +134,6 @@ public class GoBuildaTeleOp extends LinearOpMode {
             telemetry.addData("Heading", gyro.getHeading());
 
             telemetry.addLine("");
-            telemetry.addData("Operator LeftJoyY", elevatorPower);
             telemetry.addData("Operator RightJoyY", intakePower);
 
             telemetry.update();
