@@ -26,18 +26,18 @@ public class FreightDetector extends OpenCvPipeline {
     private ElevatorSubsystem.Levels targetLevel;
 
     public Rect leftROI = new Rect(
-            new Point(175, 0),
-            new Point(375, 300)
+            new Point(100, 0),
+            new Point(300, 320)
     );
 
     public Rect centerROI = new Rect(
-            new Point(550, 0),
-            new Point(750, 300)
+            new Point(500, 0),
+            new Point(700, 325)
     );
 
     public Rect rightROI = new Rect(
-            new Point(900, 0),
-            new Point(1100, 300)
+            new Point(910, 0),
+            new Point(1110, 325)
     );
 
     public FreightDetector(Telemetry telemetry) {

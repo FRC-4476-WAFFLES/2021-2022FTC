@@ -24,7 +24,7 @@ public class ElevatorSubsystem extends SubsystemBase {
 
     public final Hashtable<Levels, Integer> levels;
 
-    public Levels targetLevel;
+    private Levels targetLevelFooBarThingThatApparentlyNeedsToBeNamedSomethingDifferentEveryTime = Levels.INTAKE;
 
     public ElevatorSubsystem(MotorEx elevatorMotor, MotorEx angleMotor, ServoEx lockServo, DigitalChannel elevatorLimit){
         this.elevatorMotor = elevatorMotor;
@@ -122,18 +122,17 @@ public class ElevatorSubsystem extends SubsystemBase {
     }
 
     public void goToTeleOp(Levels targetLevel){
-        this.targetLevel = targetLevel;
+        this.targetLevelFooBarThingThatApparentlyNeedsToBeNamedSomethingDifferentEveryTime = targetLevel;
     }
 
     public void update(){
-        elevatorMotor.setTargetPosition(levels.get(targetLevel));
-        if (!elevatorMotor.atTargetPosition() &&
-                elevatorLimit.getState() &&
-                elevatorMotor.getCurrentPosition() < levels.get(targetLevel)) {
-
+        elevatorMotor.setPositionTolerance(40);
+        elevatorMotor.setTargetPosition(levels.get(targetLevelFooBarThingThatApparentlyNeedsToBeNamedSomethingDifferentEveryTime));
+        if (!elevatorMotor.atTargetPosition() && !(!elevatorLimit.getState() && elevatorMotor.getCurrentPosition() > levels.get(targetLevelFooBarThingThatApparentlyNeedsToBeNamedSomethingDifferentEveryTime))) {
             elevatorMotor.set(0.6);
+        } else {
+            elevatorMotor.set(0);
         }
-        elevatorMotor.set(0);
     }
 
     public void periodic(){

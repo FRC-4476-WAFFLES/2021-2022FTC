@@ -41,7 +41,7 @@ public class GoBildaTeleOp extends LinearOpMode {
 
     private MecanumDrive drive;
 
-    private ElevatorSubsystem elevator;
+    //private ElevatorSubsystem elevator;
 
     @Override
     public void runOpMode(){
@@ -65,7 +65,7 @@ public class GoBildaTeleOp extends LinearOpMode {
         driverJoystick = new GamepadEx(gamepad1);
         operatorJoystick = new GamepadEx(gamepad2);
 
-        elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo, elevatorLimit);
+        //elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo, elevatorLimit);
 
         frontLeftMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         frontRightMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
@@ -78,12 +78,13 @@ public class GoBildaTeleOp extends LinearOpMode {
         backRightMotor.setInverted(true);
 
         intakeMotor.setRunMode(Motor.RunMode.RawPower);
+        elevatorMotor.setRunMode(Motor.RunMode.RawPower);
 
         gyro.init();
 
         drive = new MecanumDrive(frontLeftMotor,frontRightMotor,backLeftMotor,backRightMotor);
 
-        elevator.initialize();
+        //elevator.initialize();
 
         waitForStart();
 
@@ -100,6 +101,7 @@ public class GoBildaTeleOp extends LinearOpMode {
                 gyro.reset();
             }
 
+            /*
             if (operatorJoystick.getButton(GamepadKeys.Button.A)){
                 elevator.goToTeleOp(ElevatorSubsystem.Levels.INTAKE);
             } else if (operatorJoystick.getButton(GamepadKeys.Button.B)){
@@ -112,9 +114,14 @@ public class GoBildaTeleOp extends LinearOpMode {
                 elevator.goToTeleOp(ElevatorSubsystem.Levels.L3);
             }
 
-            elevator.update();
+            elevator.update();*/
 
             double intakePower = operatorJoystick.getRightY();
+            double elevatorPower = operatorJoystick.getLeftY();
+
+            if (!elevatorLimit.getState()){
+                elevatorPower = Math.max(0, elevatorPower);
+            }
 
             drive.driveFieldCentric(
                     driverJoystick.getLeftX() * powerMultiplier,
@@ -123,6 +130,7 @@ public class GoBildaTeleOp extends LinearOpMode {
                     gyro.getHeading() + 180);
 
             intakeMotor.set(-intakePower);
+            elevatorMotor.set(elevatorPower);
 
             telemetry.addData("Limit Switch State", elevatorLimit.getState());
 
