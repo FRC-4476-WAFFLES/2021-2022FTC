@@ -69,6 +69,9 @@ public class GoBildaAutonomous extends LinearOpMode {
         elevator = new ElevatorSubsystem(elevatorMotor, angleMotor, lockServo, elevatorLimit);
 
         chassis.initialize(1, 0.22, 0);
+        chassis.setMaxVelocity(0.4, 0.4);
+        chassis.setTolerance(0.02);
+
         elevator.initialize();
 
         // Get webcam object from hardwareMap
@@ -111,40 +114,42 @@ public class GoBildaAutonomous extends LinearOpMode {
 
         webcam.stopStreaming();
 
-        /*
-        ElapsedTime tempTimer = new ElapsedTime();
-        while (tempTimer.time() < 250) {
-            targetLevel = pipeline.getTargetLevel();
-            telemetry.addData("Target Level", targetLevel);
-            telemetry.update();
+        elevator.deploy();
+
+        sleep(500);
+
+        if (targetLevel == ElevatorSubsystem.Levels.CONSTANT) {
+            targetLevel = ElevatorSubsystem.Levels.L2;
         }
-        */
 
-        // targetLevel = pipeline.getTargetLevel();
-        // targetLevel = ElevatorSubsystem.Levels.L2;
-        // telemetry.addData("Target Level", targetLevel);
+        elevator.goTo(targetLevel);
 
-        // elevator.deploy();
+        chassis.translate(1.5, 0.58, 0);
 
-        // telemetry.addLine("Deployed.");
-        // telemetry.update();
+        intakeMotor.set(-1);
 
-        sleep(1500);
+        sleep(800);
 
-        // elevator.goTo(targetLevel);
+        intakeMotor.set(0);
 
-        // telemetry.addLine("Elevator At Target Level");
-        // telemetry.update();
+        elevator.goTo(ElevatorSubsystem.Levels.CAROUSEL);
 
-        chassis.translate(.5, .5, 90);
+        chassis.setTolerance(0.01);
+        chassis.translate(0.52, 0.24, 90, 4);
 
-        /*
-        while (opModeIsActive()) {
-            telemetry.addData("Target Level", targetLevel);
-            telemetry.addData("Target Motor Position", elevator.levels.get(targetLevel));
-            telemetry.addData("Current Motor Position", elevatorMotor.getCurrentPosition());
-            telemetry.update();
-        }
-        */
+        intakeMotor.set(-1);
+
+        sleep(4000);
+
+        intakeMotor.set(0);
+
+        chassis.setMaxVelocity(0.4, 0.6);
+        chassis.translate(1.5, 0.24, -90, 5);
+        chassis.setMaxVelocity(0.4, 0.4);
+        chassis.translate(2, 0.15, -90, 2);
+        elevator.goTo(ElevatorSubsystem.Levels.INTAKE);
+        intakeMotor.set(1);
+        chassis.translate(3, 0.15, -90, 2);
+        intakeMotor.set(0);
     }
 }

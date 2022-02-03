@@ -24,7 +24,7 @@ public class ElevatorSubsystem extends SubsystemBase {
 
     public final Hashtable<Levels, Integer> levels;
 
-    private Levels targetLevelFooBarThingThatApparentlyNeedsToBeNamedSomethingDifferentEveryTime = Levels.INTAKE;
+    //private Levels targetLevelFooBarThingThatApparentlyNeedsToBeNamedSomethingDifferentEveryTime = Levels.INTAKE;
 
     public ElevatorSubsystem(MotorEx elevatorMotor, MotorEx angleMotor, ServoEx lockServo, DigitalChannel elevatorLimit){
         this.elevatorMotor = elevatorMotor;
@@ -34,7 +34,7 @@ public class ElevatorSubsystem extends SubsystemBase {
         this.levels = new Hashtable<>();
 
         levels.put(Levels.INTAKE, 0);
-        levels.put(Levels.CAROUSEL, (int) (250 / MM_PER_TICK));
+        levels.put(Levels.CAROUSEL, (int) (270 / MM_PER_TICK));
         levels.put(Levels.L1, (int) (90 / MM_PER_TICK));
         levels.put(Levels.L2, (int) (230 / MM_PER_TICK));
         levels.put(Levels.L3, (int) (370 / MM_PER_TICK));
@@ -71,12 +71,12 @@ public class ElevatorSubsystem extends SubsystemBase {
 
         elevatorMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.FLOAT);
 
-        elevatorMotor.setTargetPosition(1440 * 2);
+        elevatorMotor.setTargetPosition((int) (1440 * 2.5));
 
         while (!elevatorMotor.atTargetPosition()) elevatorMotor.set(0.6);
 
         angleMotor.setTargetPosition((int) (1440 * -0.375));
-        elevatorMotor.setTargetPosition((int) (1440 * 5.5));
+        elevatorMotor.setTargetPosition((int) (1440 * 6));
 
         boolean angleComplete = false;
         boolean elevatorComplete = false;
@@ -110,9 +110,6 @@ public class ElevatorSubsystem extends SubsystemBase {
         timer.reset();
         while (timer.time() < 0.5) { }
 
-        elevatorMotor.setTargetPosition(1440 * 5);
-        while (!elevatorMotor.atTargetPosition()) elevatorMotor.set(0.6);
-        elevatorMotor.set(0);
         elevatorMotor.resetEncoder();
         elevatorMotor.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
     }
@@ -121,6 +118,7 @@ public class ElevatorSubsystem extends SubsystemBase {
         goToRawPosition((targetLevel == Levels.CONSTANT) ? elevatorMotor.getCurrentPosition() : levels.get(targetLevel), 0.6);
     }
 
+    /*
     public void goToTeleOp(Levels targetLevel){
         this.targetLevelFooBarThingThatApparentlyNeedsToBeNamedSomethingDifferentEveryTime = targetLevel;
     }
@@ -133,7 +131,7 @@ public class ElevatorSubsystem extends SubsystemBase {
         } else {
             elevatorMotor.set(0);
         }
-    }
+    }*/
 
     public void periodic(){
 
